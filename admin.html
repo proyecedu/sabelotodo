@@ -1,0 +1,676 @@
+<!--
+  RECUPERACIÓN DE EMERGENCIA (leer si algún día nadie puede entrar como admin):
+  Si la colección "admins" de Firestore queda vacía o sin nadie con approved:true,
+  nadie podrá aprobar cuentas nuevas desde este panel (la app respeta las reglas
+  de seguridad). El dueño de la cuenta de Google del proyecto SIEMPRE puede
+  arreglarlo entrando directo a Firebase Console (esto no pasa por las reglas):
+  1. Firebase Console > Authentication > Users > copiar el UID de tu correo.
+  2. Firestore Database > Datos > colección "admins" > crear/editar el documento
+     con ID = ese UID, con los campos: approved (boolean) = true,
+     email (string) = tu correo, superAdmin (boolean) = true.
+  Con eso vuelves a tener acceso sin depender de nadie más.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Juego de Preguntas</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.17.1/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.17.1/firebase-firestore-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.17.1/firebase-auth-compat.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #1e1f2e;
+    min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    width: 100%; max-width: 640px; padding: 32px 28px; margin-top: 20px;
+  }
+  h1 { color: #222; font-size: 1.4rem; margin-bottom: 6px; text-align: center; }
+  h2 { color: #333; font-size: 1.1rem; margin: 18px 0 10px; }
+  p.subtitle { color: #777; margin-bottom: 22px; font-size: 0.9rem; text-align: center; }
+  .name-input, textarea, select {
+    width: 100%; padding: 12px; border: 2px solid #dfe2f7; border-radius: 10px;
+    font-size: 0.95rem; margin-bottom: 12px;
+  }
+  .name-input:focus, textarea:focus, select:focus { outline: none; border-color: #4e54c8; }
+  .primary-btn {
+    background: #4e54c8; color: #fff; border: none; border-radius: 10px;
+    padding: 14px 24px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%;
+  }
+  .primary-btn:hover { background: #3a3fa0; }
+  .primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .danger-btn {
+    background: #e14848; color: #fff; border: none; border-radius: 10px;
+    padding: 14px 24px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px;
+  }
+  .danger-btn:hover { background: #c33333; }
+  .secondary-btn {
+    background: #fff; color: #4e54c8; border: 2px solid #d8ddff; border-radius: 10px;
+    padding: 10px 18px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  .error-msg { color: #c33333; font-size: 0.85rem; margin-bottom: 10px; text-align: center; min-height: 18px; }
+  .season-box { background: #f0f2ff; border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 18px; }
+  .season-box .num { font-size: 2rem; font-weight: 800; color: #4e54c8; }
+  .season-box .label { font-size: 0.85rem; color: #666; }
+  .filters { display: flex; gap: 8px; margin-bottom: 14px; }
+  .filters select { margin-bottom: 0; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  th, td { text-align: left; padding: 8px 6px; font-size: 0.85rem; border-bottom: 1px solid #eee; }
+  th { color: #888; font-weight: 600; }
+  .empty-msg { color: #888; font-size: 0.9rem; text-align: center; padding: 20px 0; }
+  .status-msg { font-size: 0.85rem; color: #888; text-align: center; margin-top: 10px; min-height: 18px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab-btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: 2px solid #dfe2f7; background: #fff;
+    color: #4e54c8; font-weight: 600; cursor: pointer; font-size: 0.9rem;
+  }
+  .tab-btn.active { background: #4e54c8; color: #fff; border-color: #4e54c8; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .logout-link { font-size: 0.8rem; color: #888; cursor: pointer; text-decoration: underline; }
+  .q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .opt-row input[type="text"] { flex: 1; margin-bottom: 0; }
+  fieldset { border: 2px solid #eef0ff; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+  legend { color: #4e54c8; font-weight: 700; font-size: 0.9rem; padding: 0 6px; }
+  .custom-q-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #f7f8ff; padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem;
+  }
+  .del-btn { background: none; border: none; color: #c33333; cursor: pointer; font-size: 0.9rem; }
+  .hint { font-size: 0.78rem; color: #888; margin-bottom: 10px; line-height: 1.4; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 4px; font-size: 0.8rem; }
+
+  .pw-wrap { position: relative; }
+  .pw-wrap input { padding-right: 44px; }
+  .pw-toggle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #888; padding: 4px;
+  }
+  .pw-toggle:hover { color: #4e54c8; }
+
+  @media (max-width: 480px) {
+    body { padding: 0; align-items: flex-start; }
+    .card { max-width: 100%; min-height: 100vh; border-radius: 0; padding: 22px 16px; margin-top: 0; }
+    h1 { font-size: 1.15rem; }
+    .topbar { flex-wrap: wrap; gap: 6px; }
+    .filters { flex-direction: column; }
+    table { font-size: 0.78rem; }
+    th, td { padding: 6px 4px; }
+    .tab-btn { font-size: 0.82rem; padding: 10px 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="card" id="app"></div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN DE FIREBASE (la misma que en juego-preguntas.html)
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDu1cwxhZVG4oC71PwLNek0wx3mIhP3hOQ",
+  authDomain: "sabelotodo-41160.firebaseapp.com",
+  projectId: "sabelotodo-41160",
+  storageBucket: "sabelotodo-41160.firebasestorage.app",
+  messagingSenderId: "554869935681",
+  appId: "1:554869935681:web:0015c948136f004ad500c0"
+};
+
+let db = null, auth = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  auth = firebase.auth();
+} catch (err) {
+  console.error("Firebase no se pudo inicializar:", err);
+}
+
+const subjectLabels = { matematicas: "Matemáticas", espanol: "Español", sociales: "Sociales", naturales: "Naturales" };
+const grades = ["7mo", "8vo", "9no"];
+const subjects = ["matematicas", "espanol", "sociales", "naturales"];
+
+const app = document.getElementById("app");
+let filterGrade = "all";
+let filterSubject = "all";
+let activeTab = "ranking";
+let qGrade = grades[0];
+let qSubject = subjects[0];
+
+const DEFAULT_INVITE_CODE = "sabelotodo2026";
+
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".pw-toggle");
+  if (!btn) return;
+  const input = document.getElementById(btn.dataset.toggle);
+  if (!input) return;
+  input.type = input.type === "password" ? "text" : "password";
+});
+
+function renderLogin() {
+  app.innerHTML = `
+    <h1>🔒 Panel de Administrador</h1>
+    <p class="subtitle">Inicia sesión con tu cuenta</p>
+    <p class="error-msg" id="errorMsg"></p>
+    <input type="email" id="emailInput" class="name-input" placeholder="Correo">
+    <div class="pw-wrap"><input type="password" id="passInput" class="name-input" placeholder="Contraseña"><button type="button" class="pw-toggle" data-toggle="passInput">👁</button></div>
+    <button class="primary-btn" id="loginBtn">Entrar</button>
+    <p class="hint" style="text-align:center;">
+      <span class="logout-link" id="forgotLink">¿Olvidaste tu contraseña?</span>
+      &nbsp;·&nbsp;
+      <span class="logout-link" id="signupLink">Crear cuenta nueva</span>
+    </p>
+    <div id="forgotBox" style="display:none;margin-top:14px;">
+      <input type="email" id="forgotEmail" class="name-input" placeholder="Tu correo registrado">
+      <button class="secondary-btn" id="sendResetBtn" style="width:100%;">Enviar enlace para crear tu contraseña</button>
+      <p class="status-msg" id="forgotStatus"></p>
+    </div>
+    <div id="signupBox" style="display:none;margin-top:14px;">
+      <input type="email" id="suEmail" class="name-input" placeholder="Tu correo">
+      <div class="pw-wrap"><input type="password" id="suPass" class="name-input" placeholder="Crea una contraseña (mín. 6 caracteres)"><button type="button" class="pw-toggle" data-toggle="suPass">👁</button></div>
+      <div class="pw-wrap"><input type="password" id="suPass2" class="name-input" placeholder="Repite la contraseña"><button type="button" class="pw-toggle" data-toggle="suPass2">👁</button></div>
+      <input type="text" id="suCode" class="name-input" placeholder="Código de invitación">
+      <button class="primary-btn" id="signupBtn" style="width:100%;">Crear mi cuenta</button>
+      <p class="status-msg" id="signupStatus"></p>
+      <p class="hint">Pide el código de invitación al administrador actual.</p>
+    </div>
+    <p class="hint">Este panel usa cuentas reales protegidas por contraseña, no una clave escrita en el código.</p>
+  `;
+  document.getElementById("emailInput").focus();
+  document.getElementById("loginBtn").addEventListener("click", tryLogin);
+  document.getElementById("passInput").addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); });
+
+  document.getElementById("forgotLink").addEventListener("click", () => {
+    document.getElementById("signupBox").style.display = "none";
+    const box = document.getElementById("forgotBox");
+    box.style.display = box.style.display === "none" ? "block" : "none";
+  });
+  document.getElementById("signupLink").addEventListener("click", () => {
+    document.getElementById("forgotBox").style.display = "none";
+    const box = document.getElementById("signupBox");
+    box.style.display = box.style.display === "none" ? "block" : "none";
+  });
+
+  document.getElementById("sendResetBtn").addEventListener("click", async () => {
+    const email = document.getElementById("forgotEmail").value.trim();
+    const statusEl = document.getElementById("forgotStatus");
+    if (!email) { statusEl.textContent = "Escribe tu correo primero."; return; }
+    if (!auth) { statusEl.textContent = "Firebase no está disponible."; return; }
+    statusEl.textContent = "Enviando...";
+    try {
+      await auth.sendPasswordResetEmail(email);
+      statusEl.textContent = "Listo. Revisa tu correo (y spam) y sigue el enlace.";
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "No se pudo enviar. Verifica el correo.";
+    }
+  });
+
+  document.getElementById("signupBtn").addEventListener("click", trySignup);
+
+  function tryLogin() {
+    const email = document.getElementById("emailInput").value.trim();
+    const pass = document.getElementById("passInput").value;
+    const errEl = document.getElementById("errorMsg");
+    if (!auth) { errEl.textContent = "Firebase no está disponible."; return; }
+    errEl.textContent = "";
+    auth.signInWithEmailAndPassword(email, pass).catch(err => {
+      console.error(err);
+      errEl.textContent = "Correo o contraseña incorrectos.";
+    });
+  }
+
+  async function trySignup() {
+    const email = document.getElementById("suEmail").value.trim();
+    const pass = document.getElementById("suPass").value;
+    const pass2 = document.getElementById("suPass2").value;
+    const code = document.getElementById("suCode").value.trim();
+    const statusEl = document.getElementById("signupStatus");
+    const btn = document.getElementById("signupBtn");
+
+    if (!email || !pass || !code) { statusEl.textContent = "Completa todos los campos."; return; }
+    if (pass.length < 6) { statusEl.textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
+    if (pass !== pass2) { statusEl.textContent = "Las contraseñas no coinciden."; return; }
+    if (!auth || !db) { statusEl.textContent = "Firebase no está disponible."; return; }
+
+    btn.disabled = true;
+    statusEl.textContent = "Verificando código...";
+    try {
+      const doc = await db.collection("config").doc("adminInvite").get();
+      const validCode = (doc.exists && doc.data().code) ? doc.data().code : DEFAULT_INVITE_CODE;
+      if (code !== validCode) { statusEl.textContent = "Código de invitación incorrecto."; btn.disabled = false; return; }
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "No se pudo verificar el código. Intenta de nuevo.";
+      btn.disabled = false;
+      return;
+    }
+
+    statusEl.textContent = "Creando cuenta...";
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(email, pass);
+      await db.collection("admins").doc(cred.user.uid).set({
+        email: email, approved: false, requestedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      // onAuthStateChanged se encarga de mostrar la pantalla correspondiente
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false;
+      if (err.code === "auth/email-already-in-use") statusEl.textContent = "Ese correo ya tiene una cuenta.";
+      else if (err.code === "auth/invalid-email") statusEl.textContent = "Correo inválido.";
+      else statusEl.textContent = "No se pudo crear la cuenta.";
+    }
+  }
+}
+
+function renderDashboard() {
+  app.innerHTML = `
+    <div class="topbar">
+      <h1 style="text-align:left;margin:0;">📊 Panel de administrador</h1>
+      <span class="logout-link" id="logoutLink">Cerrar sesión</span>
+    </div>
+    <p class="subtitle" style="text-align:left;margin-bottom:16px;">Sesión de administrador activa</p>
+    <div class="tabs">
+      <button class="tab-btn ${activeTab === 'ranking' ? 'active' : ''}" id="tabRanking">Ranking</button>
+      <button class="tab-btn ${activeTab === 'preguntas' ? 'active' : ''}" id="tabPreguntas">Preguntas</button>
+      <button class="tab-btn ${activeTab === 'usuarios' ? 'active' : ''}" id="tabUsuarios">Usuarios</button>
+      <button class="tab-btn ${activeTab === 'config' ? 'active' : ''}" id="tabConfig">Configuración</button>
+    </div>
+    <div id="tabContent"></div>
+  `;
+  document.getElementById("logoutLink").addEventListener("click", () => auth.signOut());
+  document.getElementById("tabRanking").addEventListener("click", () => { activeTab = "ranking"; renderDashboard(); });
+  document.getElementById("tabPreguntas").addEventListener("click", () => { activeTab = "preguntas"; renderDashboard(); });
+  document.getElementById("tabUsuarios").addEventListener("click", () => { activeTab = "usuarios"; renderDashboard(); });
+  document.getElementById("tabConfig").addEventListener("click", () => { activeTab = "config"; renderDashboard(); });
+
+  if (activeTab === "ranking") renderRankingTab();
+  else if (activeTab === "preguntas") renderQuestionsTab();
+  else if (activeTab === "usuarios") renderUsersTab();
+  else renderConfigTab();
+}
+
+/* ---------------- USUARIOS TAB ---------------- */
+async function renderUsersTab() {
+  const wrap = document.getElementById("tabContent");
+  wrap.innerHTML = `<p class="empty-msg">Cargando...</p>`;
+  try {
+    const snap = await db.collection("admins").get();
+    const pending = [], approved = [];
+    snap.docs.forEach(d => {
+      const data = d.data();
+      (data.approved ? approved : pending).push({ id: d.id, ...data });
+    });
+
+    wrap.innerHTML = `
+      <h2>Solicitudes pendientes</h2>
+      <p class="hint">"Rechazar" quita la solicitud de esta lista, pero la cuenta de correo sigue existiendo — si esa persona vuelve a iniciar sesión, le va a aparecer "pendiente" otra vez, sin poder ver ni hacer nada hasta que la apruebes.</p>
+      ${pending.length === 0 ? '<p class="empty-msg">No hay solicitudes pendientes.</p>' : pending.map(u => `
+        <div class="custom-q-item">
+          <span>${u.email}</span>
+          <span>
+            <button class="secondary-btn" style="width:auto;padding:6px 14px;margin-right:6px;" data-approve="${u.id}">Aprobar</button>
+            <button class="del-btn" data-reject="${u.id}">Rechazar</button>
+          </span>
+        </div>
+      `).join("")}
+
+      <h2>Administradores con acceso</h2>
+      ${approved.map(u => `
+        <div class="custom-q-item">
+          <span>${u.email}${u.id === auth.currentUser.uid ? " (tú)" : ""}${u.superAdmin ? " — Admin principal" : ""}</span>
+          ${(u.id === auth.currentUser.uid || u.superAdmin) ? "" : `<button class="del-btn" data-revoke="${u.id}">Revocar acceso</button>`}
+        </div>
+      `).join("")}
+      <p class="status-msg" id="usersStatus"></p>
+    `;
+
+    wrap.querySelectorAll("[data-approve]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await db.collection("admins").doc(btn.dataset.approve).set({ approved: true, approvedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        renderUsersTab();
+      });
+    });
+    wrap.querySelectorAll("[data-reject]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await db.collection("admins").doc(btn.dataset.reject).delete();
+        renderUsersTab();
+      });
+    });
+    wrap.querySelectorAll("[data-revoke]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("¿Quitarle el acceso de administrador a esta persona?")) return;
+        await db.collection("admins").doc(btn.dataset.revoke).delete();
+        renderUsersTab();
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    wrap.innerHTML = `<p class="empty-msg">⚠️ No se pudo cargar la lista de usuarios.</p>`;
+  }
+}
+
+/* ---------------- CONFIGURACIÓN TAB ---------------- */
+async function renderConfigTab() {
+  const wrap = document.getElementById("tabContent");
+  wrap.innerHTML = `
+    <h2>Tiempo límite por pregunta</h2>
+    <p class="hint">Aplica a las próximas partidas que empiecen (no afecta partidas ya en curso).</p>
+    <input type="number" id="timeLimitInput" class="name-input" min="5" max="120" value="30">
+    <button class="primary-btn" id="saveTimeBtn">Guardar</button>
+    <p class="status-msg" id="timeStatus"></p>
+
+    <h2>Código de invitación</h2>
+    <p class="hint">Quien conozca este código puede crear su propia cuenta de administrador desde la pantalla de inicio de sesión. Cámbialo cuando quieras (por ejemplo, si ya no quieres que alguien lo use).</p>
+    <input type="text" id="inviteCodeInput" class="name-input" placeholder="Código de invitación">
+    <button class="primary-btn" id="saveInviteBtn">Guardar código</button>
+    <p class="status-msg" id="inviteStatus"></p>
+  `;
+  try {
+    const inviteDoc = await db.collection("config").doc("adminInvite").get();
+    document.getElementById("inviteCodeInput").value = (inviteDoc.exists && inviteDoc.data().code) ? inviteDoc.data().code : DEFAULT_INVITE_CODE;
+  } catch (err) { console.error(err); }
+
+  document.getElementById("saveInviteBtn").addEventListener("click", async () => {
+    const val = document.getElementById("inviteCodeInput").value.trim();
+    const statusEl = document.getElementById("inviteStatus");
+    if (!val) { statusEl.textContent = "Escribe un código."; return; }
+    statusEl.textContent = "Guardando...";
+    try {
+      await db.collection("config").doc("adminInvite").set({ code: val }, { merge: true });
+      statusEl.textContent = "Código actualizado.";
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "No se pudo guardar. Revisa tu sesión.";
+    }
+  });
+  try {
+    const doc = await db.collection("config").doc("settings").get();
+    const current = (doc.exists && doc.data().timeLimitSeconds) ? doc.data().timeLimitSeconds : 30;
+    document.getElementById("timeLimitInput").value = current;
+  } catch (err) { console.error(err); }
+
+  document.getElementById("saveTimeBtn").addEventListener("click", async () => {
+    const val = parseInt(document.getElementById("timeLimitInput").value);
+    const statusEl = document.getElementById("timeStatus");
+    if (isNaN(val) || val < 5 || val > 120) { statusEl.textContent = "Ingresa un número entre 5 y 120 segundos."; return; }
+    statusEl.textContent = "Guardando...";
+    try {
+      await db.collection("config").doc("settings").set({ timeLimitSeconds: val }, { merge: true });
+      statusEl.textContent = "Tiempo actualizado a " + val + " segundos.";
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "No se pudo guardar. Revisa tu sesión.";
+    }
+  });
+}
+
+/* ---------------- RANKING TAB ---------------- */
+async function renderRankingTab() {
+  const wrap = document.getElementById("tabContent");
+  wrap.innerHTML = `
+    <div class="season-box"><div class="num" id="seasonNum">...</div><div class="label">Ronda actual</div></div>
+    <div class="filters">
+      <select id="gradeFilter"><option value="all">Todos los niveles</option>${grades.map(g => `<option value="${g}">${g}</option>`).join("")}</select>
+      <select id="subjectFilter"><option value="all">Todas las materias</option>${subjects.map(s => `<option value="${s}">${subjectLabels[s]}</option>`).join("")}</select>
+    </div>
+    <div id="tableWrap"><p class="empty-msg">Cargando...</p></div>
+    <button class="danger-btn" id="resetBtn">Reiniciar ranking (nueva ronda)</button>
+    <p class="status-msg" id="statusMsg"></p>
+  `;
+  document.getElementById("gradeFilter").value = filterGrade;
+  document.getElementById("subjectFilter").value = filterSubject;
+  document.getElementById("gradeFilter").addEventListener("change", e => { filterGrade = e.target.value; loadRankingTable(); });
+  document.getElementById("subjectFilter").addEventListener("change", e => { filterSubject = e.target.value; loadRankingTable(); });
+  document.getElementById("resetBtn").addEventListener("click", resetSeason);
+  await loadSeason();
+  await loadRankingTable();
+}
+
+async function getCurrentSeason() {
+  const doc = await db.collection("config").doc("ranking").get();
+  if (doc.exists && doc.data().currentSeason) return doc.data().currentSeason;
+  return 1;
+}
+
+async function loadSeason() {
+  const el = document.getElementById("seasonNum");
+  if (el) el.textContent = "Ronda " + await getCurrentSeason();
+}
+
+async function loadRankingTable() {
+  const wrap = document.getElementById("tableWrap");
+  if (!wrap) return;
+  wrap.innerHTML = `<p class="empty-msg">Cargando...</p>`;
+  const season = await getCurrentSeason();
+  let query = db.collection("scores").where("season", "==", season);
+  if (filterGrade !== "all") query = query.where("grade", "==", filterGrade);
+  if (filterSubject !== "all") query = query.where("subject", "==", filterSubject);
+  try {
+    const snapshot = await query.orderBy("score", "desc").limit(50).get();
+    if (snapshot.empty) { wrap.innerHTML = `<p class="empty-msg">No hay puntajes registrados en esta ronda todavía.</p>`; return; }
+    const rows = snapshot.docs.map(d => d.data());
+    wrap.innerHTML = `
+      <table>
+        <thead><tr><th>Nombre</th><th>Nivel</th><th>Materia</th><th>Puntaje</th></tr></thead>
+        <tbody>${rows.map(r => `<tr><td>${r.name}</td><td>${r.grade}</td><td>${subjectLabels[r.subject] || r.subject}</td><td>${r.score}/${r.total}</td></tr>`).join("")}</tbody>
+      </table>`;
+  } catch (err) {
+    console.error(err);
+    wrap.innerHTML = `<p class="empty-msg">⚠️ Firestore pidió crear un índice para este filtro. Revisa la consola del navegador (F12): ahí aparece un enlace directo para crearlo con un clic.</p>`;
+  }
+}
+
+async function resetSeason() {
+  if (!confirm("¿Seguro que quieres iniciar una nueva ronda? El ranking actual dejará de mostrarse (los datos no se borran, solo se archivan).")) return;
+  const statusMsg = document.getElementById("statusMsg");
+  statusMsg.textContent = "Reiniciando...";
+  try {
+    const current = await getCurrentSeason();
+    await db.collection("config").doc("ranking").set({ currentSeason: current + 1 });
+    statusMsg.textContent = "✅ Nueva ronda iniciada.";
+    await loadSeason();
+    await loadRankingTable();
+  } catch (err) {
+    console.error(err);
+    statusMsg.textContent = "⚠️ No se pudo reiniciar el ranking. Revisa que iniciaste sesión correctamente.";
+  }
+}
+
+/* ---------------- PREGUNTAS TAB ---------------- */
+function renderQuestionsTab() {
+  const wrap = document.getElementById("tabContent");
+  wrap.innerHTML = `
+    <div class="filters">
+      <select id="qGradeSel">${grades.map(g => `<option value="${g}" ${g === qGrade ? "selected" : ""}>${g}</option>`).join("")}</select>
+      <select id="qSubjectSel">${subjects.map(s => `<option value="${s}" ${s === qSubject ? "selected" : ""}>${subjectLabels[s]}</option>`).join("")}</select>
+    </div>
+
+    <h2>Preguntas actuales (${qGrade} · ${subjectLabels[qSubject]})</h2>
+    <div id="currentQList"><p class="empty-msg">Cargando...</p></div>
+    <button class="secondary-btn" id="clearAllBtn" style="width:100%;margin-bottom:10px;">Eliminar todas y volver a las preguntas por defecto</button>
+
+    <fieldset>
+      <legend>Agregar una pregunta</legend>
+      <input type="text" id="newQ" class="name-input" placeholder="Texto de la pregunta">
+      <div class="opt-row"><input type="radio" name="correctOpt" value="0" checked><input type="text" class="opt-input" placeholder="Opción 1"></div>
+      <div class="opt-row"><input type="radio" name="correctOpt" value="1"><input type="text" class="opt-input" placeholder="Opción 2"></div>
+      <div class="opt-row"><input type="radio" name="correctOpt" value="2"><input type="text" class="opt-input" placeholder="Opción 3"></div>
+      <div class="opt-row"><input type="radio" name="correctOpt" value="3"><input type="text" class="opt-input" placeholder="Opción 4"></div>
+      <p class="hint">Marca con el círculo cuál opción es la correcta.</p>
+      <button class="primary-btn" id="addQBtn">Agregar pregunta</button>
+      <p class="status-msg" id="addQStatus"></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Subir varias preguntas a la vez (CSV)</legend>
+      <p class="hint">
+        Crea un archivo de texto (puedes hacerlo en Excel guardando como .csv) con una pregunta por línea, separando cada parte con punto y coma <code>;</code>, en este orden:<br>
+        <code>pregunta;opción1;opción2;opción3;opción4;número de la correcta (1-4)</code><br>
+        Ejemplo:<br>
+        <code>¿Capital de Honduras?;Tegucigalpa;San Pedro Sula;La Ceiba;Choluteca;1</code>
+      </p>
+      <input type="file" id="csvFile" accept=".csv,.txt">
+      <button class="primary-btn" id="uploadCsvBtn" style="margin-top:10px;">Subir archivo</button>
+      <p class="status-msg" id="csvStatus"></p>
+    </fieldset>
+  `;
+
+  document.getElementById("qGradeSel").addEventListener("change", e => { qGrade = e.target.value; renderQuestionsTab(); });
+  document.getElementById("qSubjectSel").addEventListener("change", e => { qSubject = e.target.value; renderQuestionsTab(); });
+  document.getElementById("clearAllBtn").addEventListener("click", clearAllQuestions);
+  document.getElementById("addQBtn").addEventListener("click", addSingleQuestion);
+  document.getElementById("uploadCsvBtn").addEventListener("click", uploadCsv);
+
+  loadCurrentQuestions();
+}
+
+async function loadCurrentQuestions() {
+  const wrap = document.getElementById("currentQList");
+  try {
+    const snap = await db.collection("questions").where("grade", "==", qGrade).where("subject", "==", qSubject).get();
+    if (snap.empty) { wrap.innerHTML = `<p class="empty-msg">No hay preguntas propias. El juego está usando las preguntas por defecto (si existen).</p>`; return; }
+    wrap.innerHTML = snap.docs.map(doc => `
+      <div class="custom-q-item">
+        <span>${doc.data().q}</span>
+        <button class="del-btn" data-id="${doc.id}">🗑 Borrar</button>
+      </div>
+    `).join("");
+    wrap.querySelectorAll("[data-id]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        await db.collection("questions").doc(btn.dataset.id).delete();
+        loadCurrentQuestions();
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    wrap.innerHTML = `<p class="empty-msg">⚠️ No se pudieron cargar las preguntas.</p>`;
+  }
+}
+
+async function clearAllQuestions() {
+  if (!confirm(`¿Borrar todas las preguntas propias de ${qGrade} - ${subjectLabels[qSubject]}? El juego volverá a usar las preguntas por defecto (si existen para esta materia).`)) return;
+  const snap = await db.collection("questions").where("grade", "==", qGrade).where("subject", "==", qSubject).get();
+  const batch = db.batch();
+  snap.docs.forEach(d => batch.delete(d.ref));
+  await batch.commit();
+  loadCurrentQuestions();
+}
+
+async function addSingleQuestion() {
+  const qText = document.getElementById("newQ").value.trim();
+  const optInputs = document.querySelectorAll(".opt-input");
+  const options = Array.from(optInputs).map(i => i.value.trim());
+  const correctIdx = parseInt(document.querySelector('input[name="correctOpt"]:checked').value);
+  const statusEl = document.getElementById("addQStatus");
+
+  if (!qText || options.some(o => !o)) { statusEl.textContent = "⚠️ Completa la pregunta y las 4 opciones."; return; }
+  statusEl.textContent = "Guardando...";
+  try {
+    await db.collection("questions").add({
+      grade: qGrade, subject: qSubject, q: qText, options, correct: correctIdx,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    statusEl.textContent = "✅ Pregunta agregada.";
+    document.getElementById("newQ").value = "";
+    optInputs.forEach(i => i.value = "");
+    loadCurrentQuestions();
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "⚠️ No se pudo guardar. Revisa tu sesión.";
+  }
+}
+
+async function uploadCsv() {
+  const fileInput = document.getElementById("csvFile");
+  const statusEl = document.getElementById("csvStatus");
+  if (!fileInput.files.length) { statusEl.textContent = "⚠️ Selecciona un archivo primero."; return; }
+
+  const text = await fileInput.files[0].text();
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length === 0) { statusEl.textContent = "⚠️ El archivo está vacío."; return; }
+
+  const batch = db.batch();
+  let added = 0, skipped = 0;
+  lines.forEach(line => {
+    const parts = line.split(";").map(p => p.trim());
+    if (parts.length !== 6) { skipped++; return; }
+    const [qText, o1, o2, o3, o4, correctStr] = parts;
+    const correctNum = parseInt(correctStr);
+    if (!qText || !o1 || !o2 || !o3 || !o4 || isNaN(correctNum) || correctNum < 1 || correctNum > 4) { skipped++; return; }
+    const ref = db.collection("questions").doc();
+    batch.set(ref, {
+      grade: qGrade, subject: qSubject, q: qText, options: [o1, o2, o3, o4], correct: correctNum - 1,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    added++;
+  });
+
+  if (added === 0) { statusEl.textContent = "⚠️ Ninguna línea tenía el formato correcto."; return; }
+  statusEl.textContent = "Subiendo...";
+  try {
+    await batch.commit();
+    statusEl.textContent = `✅ ${added} pregunta(s) agregadas${skipped ? `, ${skipped} línea(s) ignoradas por formato` : ""}.`;
+    fileInput.value = "";
+    loadCurrentQuestions();
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "⚠️ No se pudo subir el archivo. Revisa tu sesión.";
+  }
+}
+
+/* ---------------- PANTALLA DE ESPERA ---------------- */
+function renderPending(email) {
+  app.innerHTML = `
+    <h1>⏳ Cuenta creada</h1>
+    <p class="subtitle">${email}</p>
+    <p class="hint" style="text-align:center;font-size:0.95rem;">
+      Tu cuenta está esperando que otro administrador ya aprobado te dé acceso.
+      Avísale para que entre a la pestaña "Usuarios" del panel y te apruebe.
+    </p>
+    <button class="secondary-btn" id="checkAgainBtn" style="width:100%;margin-bottom:10px;">Ya me aprobaron, verificar de nuevo</button>
+    <p class="status-msg" id="checkStatus"></p>
+    <span class="logout-link" id="pendingLogout" style="display:block;text-align:center;margin-top:6px;">Cerrar sesión</span>
+  `;
+  document.getElementById("pendingLogout").addEventListener("click", () => auth.signOut());
+  document.getElementById("checkAgainBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("checkStatus");
+    statusEl.textContent = "Verificando...";
+    try {
+      const doc = await db.collection("admins").doc(auth.currentUser.uid).get();
+      if (doc.exists && doc.data().approved === true) renderDashboard();
+      else statusEl.textContent = "Todavía no te han aprobado.";
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "No se pudo verificar.";
+    }
+  });
+}
+
+/* ---------------- ARRANQUE ---------------- */
+if (auth) {
+  auth.onAuthStateChanged(async user => {
+    if (!user) { renderLogin(); return; }
+    try {
+      const doc = await db.collection("admins").doc(user.uid).get();
+      if (doc.exists && doc.data().approved === true) renderDashboard();
+      else renderPending(user.email);
+    } catch (err) {
+      console.error(err);
+      renderPending(user.email);
+    }
+  });
+} else {
+  renderLogin();
+}
+</script>
+</body>
+</html>

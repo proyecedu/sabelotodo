@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juego de Preguntas</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.17.1/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/12.17.1/firebase-firestore-compat.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #2b2d6e, #6a3fb5);
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    width: 100%; max-width: 480px; padding: 32px 28px; text-align: center;
+  }
+  h1 { color: #222; font-size: 1.5rem; margin-bottom: 8px; letter-spacing: 0.3px; }
+  p.subtitle { color: #666; margin-bottom: 24px; font-size: 0.95rem; }
+  .subject-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .subject-cell { display: flex; flex-direction: column; gap: 4px; }
+  button.choice-btn {
+    background: #f1eefc; border: 2px solid #ddd3f7; border-radius: 12px;
+    padding: 18px 10px; font-size: 1.05rem; font-weight: 600; color: #5b34a8;
+    cursor: pointer; transition: all 0.2s ease; width: 100%;
+  }
+  button.choice-btn:hover:not(:disabled) { background: #5b34a8; color: #fff; transform: translateY(-2px); }
+  .rank-link { font-size: 0.75rem; color: #888; text-decoration: underline; cursor: pointer; }
+  .options-grid.single-col { display: grid; grid-template-columns: 1fr; gap: 14px; }
+
+  .progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.9rem; color: #666; }
+  .score-pill { background: #f1eefc; color: #5b34a8; padding: 4px 12px; border-radius: 20px; font-weight: 700; }
+  .timer-num {
+    font-weight: 800; font-size: 1.3rem; color: #2f9e4f; min-width: 34px; text-align: center;
+    transition: color 0.2s ease;
+  }
+  .timer-num.timer-warning { color: #d99a1a; }
+  .timer-num.timer-danger { color: #d43b3b; }
+  .timer-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 18px; font-size: 0.85rem; color: #888; }
+
+  .question-text { font-size: 1.2rem; color: #222; margin-bottom: 22px; line-height: 1.4; }
+  .answer-list { display: flex; flex-direction: column; gap: 12px; }
+  button.answer-btn {
+    background: #faf9ff; border: 2px solid #e4defa; border-radius: 10px;
+    padding: 14px 16px; text-align: left; font-size: 1rem; color: #333; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  button.answer-btn:hover:not(:disabled) { border-color: #5b34a8; background: #f1eefc; }
+  button.answer-btn.correct { background: #d9f2df; border-color: #2f9e4f; color: #1c6b32; }
+  button.answer-btn.wrong { background: #fbdede; border-color: #d43b3b; color: #9c2626; }
+  button.answer-btn:disabled { cursor: not-allowed; }
+
+  .back-link { display: inline-block; margin-top: 16px; color: #888; font-size: 0.85rem; cursor: pointer; text-decoration: underline; }
+  .result-badge { display: inline-block; padding: 6px 18px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; margin-bottom: 14px; }
+  .result-badge.great { background: #d9f2df; color: #1c6b32; }
+  .result-badge.good { background: #fff2d6; color: #8a6100; }
+  .result-badge.meh { background: #f1eefc; color: #5b34a8; }
+  .result-score { font-size: 2.2rem; font-weight: 800; color: #5b34a8; margin-bottom: 6px; }
+  .result-msg { color: #555; margin-bottom: 20px; }
+
+  .primary-btn {
+    background: #5b34a8; color: #fff; border: none; border-radius: 10px;
+    padding: 14px 24px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 10px;
+  }
+  .primary-btn:hover { background: #46277f; }
+  .primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .secondary-btn {
+    background: #fff; color: #5b34a8; border: 2px solid #ddd3f7; border-radius: 10px;
+    padding: 12px 24px; font-size: 0.95rem; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 10px;
+  }
+  .name-input {
+    width: 100%; padding: 14px; border: 2px solid #e4defa; border-radius: 10px;
+    font-size: 1rem; margin-bottom: 18px; text-align: center;
+  }
+  .name-input:focus { outline: none; border-color: #5b34a8; }
+
+  .ranking-list { list-style: none; text-align: left; margin-bottom: 18px; }
+  .ranking-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; background: #faf9ff; font-size: 0.95rem;
+  }
+  .ranking-list li.me { background: #d9f2df; border: 1px solid #2f9e4f; }
+  .ranking-rank { font-weight: 700; color: #5b34a8; margin-right: 10px; }
+  .ranking-name { flex: 1; text-align: left; }
+  .ranking-score { font-weight: 700; color: #333; }
+  .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2f9e4f; margin-right: 6px; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .status-msg { font-size: 0.85rem; color: #888; margin-bottom: 14px; min-height: 18px; }
+
+  .mute-btn {
+    position: absolute; top: 14px; right: 14px; background: none; border: none;
+    font-size: 1.2rem; cursor: pointer; color: #888; padding: 6px;
+  }
+  .card { position: relative; }
+  .quiz-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .exit-link { font-size: 0.78rem; color: #aaa; text-decoration: underline; cursor: pointer; }
+
+  .bonus-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 18px; }
+  button.bonus-card {
+    aspect-ratio: 1; border-radius: 14px; border: 2px solid #ddd3f7; background: #f1eefc;
+    color: #5b34a8; font-size: 1.6rem; font-weight: 800; cursor: pointer; transition: all 0.2s ease;
+  }
+  button.bonus-card:hover:not(:disabled) { background: #5b34a8; color: #fff; }
+  button.bonus-card:disabled { cursor: not-allowed; opacity: 0.55; }
+  button.bonus-card.revealed { font-size: 1rem; opacity: 1; background: #fff; border-color: #5b34a8; color: #5b34a8; }
+
+  @media (max-width: 480px) {
+    body { padding: 0; align-items: flex-start; }
+    .card { max-width: 100%; min-height: 100vh; border-radius: 0; padding: 24px 18px; display: flex; flex-direction: column; justify-content: center; }
+    h1 { font-size: 1.3rem; }
+    .subject-grid { grid-template-columns: 1fr; }
+    button.choice-btn { padding: 16px 10px; font-size: 1rem; }
+    .question-text { font-size: 1.1rem; }
+    button.answer-btn { padding: 16px 14px; font-size: 1rem; }
+    .result-score { font-size: 1.9rem; }
+  }
+  @media (hover: none) {
+    button.choice-btn:hover:not(:disabled), button.answer-btn:hover:not(:disabled), button.bonus-card:hover:not(:disabled) { transform: none; }
+  }
+  @media (min-width: 768px) {
+    .card { max-width: 640px; padding: 44px 52px; }
+    h1 { font-size: 1.9rem; }
+    p.subtitle { font-size: 1.05rem; }
+    .options-grid.single-col { grid-template-columns: repeat(3, 1fr); }
+    .subject-grid { grid-template-columns: repeat(4, 1fr); }
+    .question-text { font-size: 1.4rem; }
+    .answer-list { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    button.answer-btn { font-size: 1.05rem; }
+    .primary-btn, .secondary-btn { width: auto; min-width: 220px; }
+    .result-score { font-size: 2.6rem; }
+    .bonus-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <button class="mute-btn" id="muteBtn">🔊</button>
+  <div id="app"></div>
+</div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN DE FIREBASE — pega aquí tu firebaseConfig real
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDu1cwxhZVG4oC71PwLNek0wx3mIhP3hOQ",
+  authDomain: "sabelotodo-41160.firebaseapp.com",
+  projectId: "sabelotodo-41160",
+  storageBucket: "sabelotodo-41160.firebasestorage.app",
+  messagingSenderId: "554869935681",
+  appId: "1:554869935681:web:0015c948136f004ad500c0"
+};
+
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} catch (err) {
+  console.error("Firebase no se pudo inicializar:", err);
+}
+
+const POINTS_PER_QUESTION = 100;
+const DEFAULT_TIME_LIMIT = 30;
+
+/* =========================================================
+   BANCO DE PREGUNTAS POR DEFECTO
+   ========================================================= */
+const questionBank = {
+  "7mo": {
+    matematicas: [
+      { q: "¿Cuánto es 8 + 15?", options: ["21", "23", "24", "22"], correct: 1 },
+      { q: "¿Cuál es el resultado de 9 × 6?", options: ["54", "56", "45", "63"], correct: 0 },
+      { q: "¿Cuánto es 100 ÷ 4?", options: ["20", "25", "30", "24"], correct: 1 },
+      { q: "¿Cuál es el perímetro de un cuadrado de lado 5 cm?", options: ["10 cm", "15 cm", "20 cm", "25 cm"], correct: 2 },
+      { q: "¿Cuánto es 7² (7 al cuadrado)?", options: ["14", "49", "42", "21"], correct: 1 }
+    ],
+    espanol: [
+      { q: "¿Cuál palabra es un sustantivo?", options: ["Correr", "Bonito", "Casa", "Rápidamente"], correct: 2 },
+      { q: "¿Cuál es el sinónimo de 'feliz'?", options: ["Triste", "Contento", "Enojado", "Cansado"], correct: 1 },
+      { q: "¿Cuál oración está escrita correctamente?", options: ["el perro corre", "El perro corre.", "El Perro corre", "el Perro Corre."], correct: 1 },
+      { q: "¿Cuál es el antónimo de 'grande'?", options: ["Enorme", "Alto", "Pequeño", "Ancho"], correct: 2 },
+      { q: "¿Qué tipo de palabra es 'rápidamente'?", options: ["Sustantivo", "Adjetivo", "Adverbio", "Verbo"], correct: 2 }
+    ]
+  },
+  "8vo": {
+    matematicas: [
+      { q: "¿Cuánto es (-3) + 7?", options: ["4", "-4", "10", "-10"], correct: 0 },
+      { q: "¿Cuál es el valor de x en: x + 5 = 12?", options: ["5", "6", "7", "8"], correct: 2 },
+      { q: "¿Cuánto es 3/4 en decimal?", options: ["0.34", "0.75", "0.25", "0.43"], correct: 1 },
+      { q: "¿Cuál es el área de un rectángulo de 6 x 4?", options: ["20", "24", "10", "28"], correct: 1 },
+      { q: "¿Cuánto es 2³ (2 al cubo)?", options: ["6", "8", "4", "9"], correct: 1 }
+    ],
+    espanol: [
+      { q: "¿Cuál palabra lleva tilde?", options: ["Camion", "Arbol", "Café", "Pantalon"], correct: 2 },
+      { q: "¿Cuál es el sujeto en 'María canta una canción'?", options: ["Canta", "Una canción", "María", "Canción"], correct: 2 },
+      { q: "¿Cuál es un ejemplo de verbo?", options: ["Mesa", "Estudiar", "Verde", "Lento"], correct: 1 },
+      { q: "¿Cuál es el plural de 'lápiz'?", options: ["Lapizes", "Lápices", "Lapices", "Lápizs"], correct: 1 },
+      { q: "¿Qué signo se usa al final de una pregunta?", options: [".", ",", "?", "!"], correct: 2 }
+    ]
+  },
+  "9no": {
+    matematicas: [
+      { q: "¿Cuál es la solución de 2x = 10?", options: ["4", "5", "6", "8"], correct: 1 },
+      { q: "¿Cuánto es √81?", options: ["8", "9", "7", "10"], correct: 1 },
+      { q: "¿Cuál es la fórmula del área de un círculo?", options: ["πr", "2πr", "πr²", "πd"], correct: 2 },
+      { q: "¿Cuánto es 15% de 200?", options: ["20", "25", "30", "35"], correct: 2 },
+      { q: "¿Cuál es el resultado de (x²)³?", options: ["x⁵", "x⁶", "x⁹", "x⁸"], correct: 1 }
+    ],
+    espanol: [
+      { q: "¿Qué es una metáfora?", options: ["Comparación directa con 'como'", "Comparación implícita sin 'como'", "Una rima", "Un signo de puntuación"], correct: 1 },
+      { q: "¿Cuál es un ejemplo de oración compuesta?", options: ["Juan corre.", "Juan corre y María salta.", "Juan.", "Corre Juan."], correct: 1 },
+      { q: "¿Cuál es el género literario de una novela?", options: ["Lírico", "Narrativo", "Dramático", "Ensayístico"], correct: 1 },
+      { q: "¿Cuál palabra es un adjetivo?", options: ["Correr", "Hermoso", "Casa", "Rápidamente"], correct: 1 },
+      { q: "¿Qué es un sinónimo?", options: ["Palabra con significado opuesto", "Palabra con significado similar", "Palabra sin significado", "Un signo de puntuación"], correct: 1 }
+    ]
+  }
+};
+
+const subjectLabels = { matematicas: "Matemáticas", espanol: "Español", sociales: "Sociales", naturales: "Naturales" };
+const allSubjects = ["matematicas", "espanol", "sociales", "naturales"];
+
+const bonusPrizesTemplate = [
+  { label: "Doble puntos", effect: s => s * 2 },
+  { label: "Sin premio", effect: s => s },
+  { label: "+100 puntos", effect: s => s + 100 },
+  { label: "-50 puntos", effect: s => Math.max(0, s - 50) }
+];
+
+let state = {
+  screen: "welcome", grade: null, subject: null, playerName: "",
+  questions: [], currentIndex: 0, score: 0, saved: false,
+  rankingOrigin: "result", timeLimit: DEFAULT_TIME_LIMIT, timeLeft: DEFAULT_TIME_LIMIT,
+  timerInterval: null, bonusShown: false
+};
+let rankingUnsubscribe = null;
+
+const app = document.getElementById("app");
+
+function render() {
+  if (rankingUnsubscribe && state.screen !== "ranking") { rankingUnsubscribe(); rankingUnsubscribe = null; }
+  if (state.timerInterval && state.screen !== "quiz") { clearInterval(state.timerInterval); state.timerInterval = null; }
+
+  if (state.screen === "welcome") renderWelcomeScreen();
+  else if (state.screen === "grade") renderGradeScreen();
+  else if (state.screen === "subject") renderSubjectScreen();
+  else if (state.screen === "name") renderNameScreen();
+  else if (state.screen === "quiz") renderQuizScreen();
+  else if (state.screen === "bonus") renderBonusScreen();
+  else if (state.screen === "result") renderResultScreen();
+  else if (state.screen === "ranking") renderRankingScreen();
+}
+
+function renderWelcomeScreen() {
+  app.innerHTML = `
+    <h1>Juego de Preguntas</h1>
+    <p class="subtitle">Pon a prueba lo que sabes, suma puntos y sube al ranking.</p>
+    <button class="primary-btn" id="playBtn" style="font-size:1.1rem;padding:18px 24px;">JUGAR</button>
+  `;
+  document.getElementById("playBtn").addEventListener("click", () => { state.screen = "grade"; render(); });
+}
+
+function renderGradeScreen() {
+  app.innerHTML = `
+    <h1>Juego de Preguntas</h1>
+    <p class="subtitle">Elige tu nivel para comenzar</p>
+    <div class="options-grid single-col">
+      <button class="choice-btn" data-grade="7mo">7mo grado</button>
+      <button class="choice-btn" data-grade="8vo">8vo grado</button>
+      <button class="choice-btn" data-grade="9no">9no grado</button>
+    </div>
+    <span class="back-link" id="backToWelcome">&larr; Volver</span>
+  `;
+  app.querySelectorAll("[data-grade]").forEach(btn => {
+    btn.addEventListener("click", () => { state.grade = btn.dataset.grade; state.screen = "subject"; render(); });
+  });
+  document.getElementById("backToWelcome").addEventListener("click", () => { state.screen = "welcome"; render(); });
+}
+
+function renderSubjectScreen() {
+  app.innerHTML = `
+    <h1>${state.grade}</h1>
+    <p class="subtitle">¿Qué materia quieres practicar?</p>
+    <div class="subject-grid">
+      ${allSubjects.map(subj => `
+        <div class="subject-cell">
+          <button class="choice-btn" data-subject="${subj}">${subjectLabels[subj]}</button>
+          <span class="rank-link" data-rank="${subj}">Ver ranking</span>
+        </div>
+      `).join("")}
+    </div>
+    <span class="back-link" id="backToGrade">&larr; Cambiar nivel</span>
+  `;
+  app.querySelectorAll("[data-subject]").forEach(btn => {
+    btn.addEventListener("click", () => { state.subject = btn.dataset.subject; state.screen = "name"; render(); });
+  });
+  app.querySelectorAll("[data-rank]").forEach(el => {
+    el.addEventListener("click", () => {
+      state.subject = el.dataset.rank;
+      state.rankingOrigin = "subject";
+      state.screen = "ranking";
+      render();
+    });
+  });
+  document.getElementById("backToGrade").addEventListener("click", () => { state.screen = "grade"; render(); });
+}
+
+function renderNameScreen() {
+  app.innerHTML = `
+    <h1>¿Cómo te llamas?</h1>
+    <p class="subtitle">Tu nombre aparecerá en el ranking de ${subjectLabels[state.subject]} - ${state.grade}</p>
+    <input type="text" id="nameInput" class="name-input" placeholder="Escribe tu nombre" maxlength="20" value="${state.playerName}">
+    <p class="status-msg" id="loadStatus"></p>
+    <button class="primary-btn" id="startBtn">Comenzar</button>
+    <span class="back-link" id="backToSubject">&larr; Cambiar materia</span>
+  `;
+  const input = document.getElementById("nameInput");
+  input.focus();
+  const startBtn = document.getElementById("startBtn");
+  const loadStatus = document.getElementById("loadStatus");
+
+  async function start() {
+    const name = input.value.trim();
+    if (!name) { input.focus(); return; }
+    state.playerName = name;
+    startBtn.disabled = true;
+    loadStatus.textContent = "Cargando...";
+    const [questions, timeLimit] = await Promise.all([
+      loadQuestions(state.grade, state.subject),
+      loadTimeLimit()
+    ]);
+    if (questions.length === 0) {
+      startBtn.disabled = false;
+      loadStatus.textContent = "Todavía no hay preguntas para esta materia y nivel.";
+      return;
+    }
+    state.questions = questions;
+    state.timeLimit = timeLimit;
+    state.currentIndex = 0; state.score = 0; state.saved = false; state.bonusShown = false;
+    state.screen = "quiz"; render();
+  }
+  startBtn.addEventListener("click", start);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") start(); });
+  document.getElementById("backToSubject").addEventListener("click", () => { state.screen = "subject"; render(); });
+}
+
+function renderQuizScreen() {
+  const q = state.questions[state.currentIndex];
+  app.innerHTML = `
+    <div class="quiz-top-row">
+      <span>Pregunta ${state.currentIndex + 1} de ${state.questions.length}</span>
+      <span class="score-pill">Puntos: ${state.score}</span>
+    </div>
+    <div class="quiz-top-row" style="margin-bottom:14px;">
+      <span class="exit-link" id="exitQuizBtn">Salir</span>
+      <span></span>
+    </div>
+    <div class="timer-row">Tiempo restante: <span class="timer-num" id="timerNum">${state.timeLimit}</span>s</div>
+    <div class="question-text">${q.q}</div>
+    <div class="answer-list">
+      ${q.options.map((opt, i) => `<button class="answer-btn" data-index="${i}">${opt}</button>`).join("")}
+    </div>
+  `;
+  document.getElementById("exitQuizBtn").addEventListener("click", () => {
+    if (!confirm("¿Seguro que quieres salir? Perderás tu progreso de esta partida.")) return;
+    clearTimer();
+    state.screen = "subject";
+    render();
+  });
+  const buttons = app.querySelectorAll(".answer-btn");
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      clearTimer();
+      const chosen = parseInt(btn.dataset.index);
+      buttons.forEach(b => b.disabled = true);
+      if (chosen === q.correct) {
+        btn.classList.add("correct");
+        state.score += POINTS_PER_QUESTION;
+        playCorrectSound();
+      } else {
+        btn.classList.add("wrong");
+        buttons[q.correct].classList.add("correct");
+        playWrongSound();
+      }
+      setTimeout(proceedAfterAnswer, 900);
+    });
+  });
+  startTimer();
+}
+
+function startTimer() {
+  clearTimer();
+  state.timeLeft = state.timeLimit;
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    const el = document.getElementById("timerNum");
+    if (el) {
+      el.textContent = state.timeLeft;
+      el.classList.toggle("timer-warning", state.timeLeft <= 10 && state.timeLeft > 5);
+      el.classList.toggle("timer-danger", state.timeLeft <= 5);
+    }
+    if (state.timeLeft <= 0) {
+      clearTimer();
+      handleTimeout();
+    }
+  }, 1000);
+}
+
+function clearTimer() {
+  if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+}
+
+function handleTimeout() {
+  const q = state.questions[state.currentIndex];
+  const buttons = app.querySelectorAll(".answer-btn");
+  buttons.forEach(b => b.disabled = true);
+  if (buttons[q.correct]) buttons[q.correct].classList.add("correct");
+  playWrongSound();
+  setTimeout(proceedAfterAnswer, 1100);
+}
+
+function proceedAfterAnswer() {
+  state.currentIndex++;
+  if (!state.bonusShown && state.currentIndex === 3 && state.questions.length >= 4) {
+    state.bonusShown = true;
+    state.screen = "bonus";
+    render();
+  } else if (state.currentIndex < state.questions.length) {
+    render();
+  } else {
+    state.screen = "result";
+    render();
+  }
+}
+
+function renderBonusScreen() {
+  const prizes = shuffle([...bonusPrizesTemplate]);
+  app.innerHTML = `
+    <h1>Ronda bonus</h1>
+    <p class="subtitle">Elige una carta. Cada una esconde un premio distinto.</p>
+    <div class="bonus-grid" id="bonusGrid">
+      ${prizes.map((p, i) => `<button class="bonus-card" data-index="${i}">?</button>`).join("")}
+    </div>
+    <p class="status-msg" id="bonusStatus"></p>
+    <button class="primary-btn" id="bonusContinueBtn" style="display:none;">Continuar</button>
+  `;
+  const cards = app.querySelectorAll(".bonus-card");
+  cards.forEach(card => {
+    card.addEventListener("click", () => {
+      cards.forEach(c => c.disabled = true);
+      const idx = parseInt(card.dataset.index);
+      const prize = prizes[idx];
+      const before = state.score;
+      state.score = prize.effect(state.score);
+      card.textContent = prize.label;
+      card.classList.add("revealed");
+      document.getElementById("bonusStatus").textContent = `Puntaje: ${before} → ${state.score}`;
+      document.getElementById("bonusContinueBtn").style.display = "inline-block";
+      if (state.score > before) playCorrectSound();
+      else if (state.score < before) playWrongSound();
+    });
+  });
+  document.getElementById("bonusContinueBtn").addEventListener("click", () => { state.screen = "quiz"; render(); });
+}
+
+function renderResultScreen() {
+  const maxPossible = state.questions.length * POINTS_PER_QUESTION;
+  const pct = Math.round((state.score / maxPossible) * 100);
+  let badgeClass = "meh", msg = "Sigue practicando.";
+  if (pct >= 100) { badgeClass = "great"; msg = "Puntaje perfecto. Dominas el tema."; }
+  else if (pct >= 60) { badgeClass = "great"; msg = "Muy bien hecho."; }
+  else if (pct >= 40) { badgeClass = "good"; msg = "Vas bien, sigue practicando."; }
+
+  app.innerHTML = `
+    <div class="result-badge ${badgeClass}">${state.playerName}</div>
+    <div class="result-score">${state.score} / ${maxPossible} pts</div>
+    <p class="result-msg">${msg} (${subjectLabels[state.subject]} - ${state.grade})</p>
+    <p class="status-msg" id="saveStatus">Guardando tu puntaje...</p>
+    <button class="primary-btn" id="rankingBtn" disabled>Ver ranking en vivo</button>
+    <button class="secondary-btn" id="retryBtn">Jugar de nuevo</button>
+    <span class="back-link" id="changeSubjectBtn">Cambiar materia</span><br>
+    <span class="back-link" id="changeGradeBtn">Cambiar nivel</span>
+  `;
+
+  if (!state.saved) {
+    saveScore(state.playerName, state.grade, state.subject, state.score, state.questions.length * POINTS_PER_QUESTION)
+      .then(() => {
+        state.saved = true;
+        document.getElementById("saveStatus").textContent = "Puntaje guardado en el ranking.";
+        document.getElementById("rankingBtn").disabled = false;
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("saveStatus").textContent = "No se pudo guardar el puntaje (revisa tu conexión).";
+      });
+  } else {
+    document.getElementById("saveStatus").textContent = "Puntaje guardado en el ranking.";
+    document.getElementById("rankingBtn").disabled = false;
+  }
+
+  document.getElementById("rankingBtn").addEventListener("click", () => { state.rankingOrigin = "result"; state.screen = "ranking"; render(); });
+  document.getElementById("retryBtn").addEventListener("click", async () => {
+    const [questions, timeLimit] = await Promise.all([loadQuestions(state.grade, state.subject), loadTimeLimit()]);
+    state.questions = questions.length ? questions : state.questions;
+    state.timeLimit = timeLimit;
+    state.currentIndex = 0; state.score = 0; state.saved = false; state.bonusShown = false;
+    state.screen = "quiz"; render();
+  });
+  document.getElementById("changeSubjectBtn").addEventListener("click", () => { state.screen = "subject"; render(); });
+  document.getElementById("changeGradeBtn").addEventListener("click", () => { state.screen = "grade"; render(); });
+}
+
+function renderRankingScreen() {
+  app.innerHTML = `
+    <h1><span class="live-dot"></span>Ranking en vivo</h1>
+    <p class="subtitle">${subjectLabels[state.subject]} - ${state.grade}</p>
+    <p class="status-msg" id="rankingStatus">Cargando ranking...</p>
+    <ul class="ranking-list" id="rankingList"></ul>
+    <button class="secondary-btn" id="backBtn">Volver</button>
+  `;
+  subscribeRanking(state.grade, state.subject);
+  document.getElementById("backBtn").addEventListener("click", () => {
+    state.screen = state.rankingOrigin === "result" ? "result" : "subject";
+    render();
+  });
+}
+
+let isMuted = localStorage.getItem("juegoMuted") === "true";
+function updateMuteBtn() {
+  const btn = document.getElementById("muteBtn");
+  if (btn) btn.textContent = isMuted ? "🔇" : "🔊";
+}
+document.getElementById("muteBtn").addEventListener("click", () => {
+  isMuted = !isMuted;
+  localStorage.setItem("juegoMuted", isMuted);
+  updateMuteBtn();
+});
+updateMuteBtn();
+
+/* =========================================================
+   SONIDO (Web Audio API, sin archivos externos)
+   ========================================================= */
+let audioCtx = null;
+function getAudioCtx() {
+  if (isMuted) return null;
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+function playTone(freq, duration, type, delay) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.15, ctx.currentTime + delay);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(ctx.currentTime + delay);
+  osc.stop(ctx.currentTime + delay + duration);
+}
+function playCorrectSound() { playTone(523.25, 0.12, "sine", 0); playTone(783.99, 0.18, "sine", 0.1); }
+function playWrongSound() { playTone(160, 0.3, "sawtooth", 0); }
+
+/* =========================================================
+   FUNCIONES DE FIRESTORE
+   ========================================================= */
+async function getCurrentSeason() {
+  if (!db) throw new Error("Firestore no disponible");
+  const doc = await db.collection("config").doc("ranking").get();
+  if (doc.exists && doc.data().currentSeason) return doc.data().currentSeason;
+  return 1;
+}
+
+async function loadTimeLimit() {
+  if (!db) return DEFAULT_TIME_LIMIT;
+  try {
+    const doc = await db.collection("config").doc("settings").get();
+    if (doc.exists && doc.data().timeLimitSeconds) return doc.data().timeLimitSeconds;
+  } catch (err) { console.error(err); }
+  return DEFAULT_TIME_LIMIT;
+}
+
+async function saveScore(name, grade, subject, score, total) {
+  if (!db) throw new Error("Firestore no disponible");
+  const season = await getCurrentSeason();
+  await db.collection("scores").add({
+    name, grade, subject, score, total, season,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+async function subscribeRanking(grade, subject) {
+  const statusEl = document.getElementById("rankingStatus");
+  if (!db) { statusEl.textContent = "Ranking no disponible."; return; }
+  try {
+    const season = await getCurrentSeason();
+    rankingUnsubscribe = db.collection("scores")
+      .where("season", "==", season)
+      .where("grade", "==", grade)
+      .where("subject", "==", subject)
+      .orderBy("score", "desc")
+      .limit(10)
+      .onSnapshot(snapshot => {
+        renderRankingList(snapshot.docs.map(d => d.data()));
+      }, err => {
+        console.error(err);
+        const s = document.getElementById("rankingStatus");
+        if (s) s.textContent = "No se pudo cargar el ranking (revisa la consola del navegador por si falta crear un índice en Firestore).";
+      });
+  } catch (err) {
+    console.error(err);
+    if (statusEl) statusEl.textContent = "No se pudo cargar el ranking.";
+  }
+}
+
+function renderRankingList(list) {
+  const statusEl = document.getElementById("rankingStatus");
+  const listEl = document.getElementById("rankingList");
+  if (!listEl) return;
+  if (list.length === 0) {
+    listEl.innerHTML = "";
+    if (statusEl) statusEl.textContent = "Todavía no hay puntajes en esta ronda.";
+    return;
+  }
+  if (statusEl) statusEl.textContent = "";
+  listEl.innerHTML = list.map((item, i) => `
+    <li class="${item.name === state.playerName && item.score === state.score ? 'me' : ''}">
+      <span class="ranking-rank">#${i + 1}</span>
+      <span class="ranking-name">${item.name}</span>
+      <span class="ranking-score">${item.score} pts</span>
+    </li>
+  `).join("");
+}
+
+async function loadQuestions(grade, subject) {
+  if (db) {
+    try {
+      const snap = await db.collection("questions").where("grade", "==", grade).where("subject", "==", subject).get();
+      if (!snap.empty) {
+        const custom = snap.docs.map(d => d.data());
+        return shuffle(custom).slice(0, Math.min(5, custom.length));
+      }
+    } catch (err) { console.error(err); }
+  }
+  const fallback = (questionBank[grade] && questionBank[grade][subject]) || [];
+  if (fallback.length === 0) return [];
+  return shuffle([...fallback]).slice(0, Math.min(5, fallback.length));
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+render();
+</script>
+</body>
+</html>
