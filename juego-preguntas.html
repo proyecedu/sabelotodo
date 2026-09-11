@@ -35,7 +35,7 @@
   }
   button.choice-btn:hover:not(:disabled) { background: #5b34a8; color: #fff; transform: translateY(-2px); }
   .rank-link { font-size: 0.75rem; color: #888; text-decoration: underline; cursor: pointer; }
-  .options-grid.single-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .options-grid.single-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 
   .progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.9rem; color: #666; }
   .score-pill { background: #f1eefc; color: #5b34a8; padding: 4px 12px; border-radius: 20px; font-weight: 700; }
@@ -298,7 +298,7 @@ function renderSubjectScreen() {
         </div>
       `).join("")}
     </div>
-    <span class="back-link" id="backToGrade">&larr; Cambiar nivel</span>
+    <span class="back-link" id="backToGrade">&larr; Cambiar grado</span>
   `;
   app.querySelectorAll("[data-subject]").forEach(btn => {
     btn.addEventListener("click", () => { state.subject = btn.dataset.subject; state.screen = "name"; render(); });
@@ -509,7 +509,7 @@ function renderResultScreen() {
     <button class="primary-btn" id="rankingBtn" disabled>Ver ranking en vivo</button>
     <button class="secondary-btn" id="retryBtn">Jugar de nuevo</button>
     <span class="back-link" id="changeSubjectBtn">Cambiar materia</span><br>
-    <span class="back-link" id="changeGradeBtn">Cambiar nivel</span>
+    <span class="back-link" id="changeGradeBtn">Cambiar grado</span>
   `;
 
   if (!state.saved) {
