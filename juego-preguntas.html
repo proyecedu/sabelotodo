@@ -122,15 +122,6 @@
   button.bonus-card:hover:not(:disabled) { background: #5b34a8; color: #fff; }
   button.bonus-card:disabled { cursor: not-allowed; opacity: 0.55; }
   button.bonus-card.revealed { font-size: 1rem; opacity: 1; background: #fff; border-color: #5b34a8; color: #5b34a8; }
-  @keyframes cardShuffle {
-    0% { transform: translateX(0) rotate(0deg); }
-    20% { transform: translateX(-16px) rotate(-7deg); }
-    40% { transform: translateX(12px) rotate(6deg); }
-    60% { transform: translateX(-10px) rotate(-5deg); }
-    80% { transform: translateX(6px) rotate(3deg); }
-    100% { transform: translateX(0) rotate(0deg); }
-  }
-  button.bonus-card.shuffling { animation: cardShuffle 0.8s ease-in-out; }
 
   /* Solo en celulares muy angostos: tarjeta a pantalla completa en vez de flotando en el centro */
   @media (max-width: 420px) {
@@ -446,37 +437,28 @@ function renderBonusScreen() {
     <h1>Ronda bonus</h1>
     <p class="subtitle" id="bonusSubtitle">Mira bien, ¡estos son los premios que podrías ganar!</p>
     <div class="bonus-grid" id="bonusGrid">
-      ${bonusPrizesTemplate.map(p => `<button class="bonus-card revealed" disabled>${p.label}</button>`).join("")}
+      ${bonusPrizesTemplate.map((p, i) => `<button class="bonus-card revealed" data-prize-index="${i}" disabled>${p.label}</button>`).join("")}
     </div>
     <p class="status-msg" id="bonusStatus"></p>
     <button class="primary-btn" id="bonusContinueBtn" style="display:none;">Continuar</button>
   `;
 
   setTimeout(() => {
+    const grid = document.getElementById("bonusGrid");
+    if (!grid) return;
     const subtitleEl = document.getElementById("bonusSubtitle");
     if (subtitleEl) subtitleEl.textContent = "¡Se están revolviendo!";
+    grid.querySelectorAll(".bonus-card").forEach(c => { c.classList.remove("revealed"); c.textContent = "?"; });
     playShuffleSound();
-    document.querySelectorAll("#bonusGrid .bonus-card").forEach((c, i) => {
-      c.classList.remove("revealed");
-      c.textContent = "?";
-      c.style.animationDelay = (i * 0.08) + "s";
-      c.classList.add("shuffling");
-    });
 
-    setTimeout(() => {
-      const prizes = shuffle([...bonusPrizesTemplate]);
-      const grid = document.getElementById("bonusGrid");
-      if (!grid) return;
-      grid.innerHTML = prizes.map((p, i) => `<button class="bonus-card" data-index="${i}">?</button>`).join("");
+    shuffleCardsAnimated(grid, 6, () => {
       const subtitleEl2 = document.getElementById("bonusSubtitle");
       if (subtitleEl2) subtitleEl2.textContent = "Elige una carta.";
-
-      const cards = grid.querySelectorAll(".bonus-card");
-      cards.forEach(card => {
+      grid.querySelectorAll(".bonus-card").forEach(card => {
+        card.disabled = false;
         card.addEventListener("click", () => {
-          cards.forEach(c => c.disabled = true);
-          const idx = parseInt(card.dataset.index);
-          const prize = prizes[idx];
+          grid.querySelectorAll(".bonus-card").forEach(c => c.disabled = true);
+          const prize = bonusPrizesTemplate[parseInt(card.dataset.prizeIndex)];
           const before = state.score;
           state.score = prize.effect(state.score);
           card.textContent = prize.label;
@@ -487,10 +469,51 @@ function renderBonusScreen() {
           else if (state.score < before) playWrongSound();
         });
       });
-    }, 900);
+    });
   }, 1800);
 
   document.getElementById("bonusContinueBtn").addEventListener("click", () => { state.screen = "quiz"; render(); });
+}
+
+// Intercambia dos cartas de posición varias veces, animando el movimiento real
+// entre sus posiciones viejas y nuevas (técnica FLIP), como una baraja de verdad.
+function shuffleCardsAnimated(container, rounds, done) {
+  let round = 0;
+  function doRound() {
+    if (round >= rounds) { done(); return; }
+    const children = Array.from(container.children);
+    const i = Math.floor(Math.random() * children.length);
+    let j = Math.floor(Math.random() * children.length);
+    if (j === i) j = (i + 1) % children.length;
+    const a = children[i], b = children[j];
+
+    const firstA = a.getBoundingClientRect();
+    const firstB = b.getBoundingClientRect();
+
+    const placeholder = document.createComment("");
+    container.insertBefore(placeholder, a);
+    container.insertBefore(a, b);
+    container.insertBefore(b, placeholder);
+    container.removeChild(placeholder);
+
+    const lastA = a.getBoundingClientRect();
+    const lastB = b.getBoundingClientRect();
+    const dxA = firstA.left - lastA.left, dyA = firstA.top - lastA.top;
+    const dxB = firstB.left - lastB.left, dyB = firstB.top - lastB.top;
+
+    [a, b].forEach(el => { el.style.transition = "none"; el.style.zIndex = "5"; });
+    a.style.transform = `translate(${dxA}px, ${dyA}px)`;
+    b.style.transform = `translate(${dxB}px, ${dyB}px)`;
+    void a.offsetWidth; // forzar reflow antes de animar
+
+    [a, b].forEach(el => { el.style.transition = "transform 0.32s ease"; });
+    a.style.transform = "";
+    b.style.transform = "";
+
+    round++;
+    setTimeout(doRound, 340);
+  }
+  doRound();
 }
 
 function renderResultScreen() {
