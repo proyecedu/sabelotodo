@@ -26,7 +26,7 @@
   }
   h1 { color: #222; font-size: clamp(1.35rem, 1rem + 1.6vw, 2.3rem); margin-bottom: 8px; letter-spacing: 0.3px; }
   p.subtitle { color: #666; margin-bottom: clamp(18px, 2vw, 28px); font-size: clamp(0.9rem, 0.8rem + 0.4vw, 1.15rem); }
-  .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; }
+  .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
   .subject-cell { display: flex; flex-direction: column; gap: 4px; }
   button.choice-btn {
     background: #f1eefc; border: 2px solid #ddd3f7; border-radius: 12px;
@@ -34,6 +34,26 @@
     cursor: pointer; transition: all 0.2s ease; width: 100%;
   }
   button.choice-btn:hover:not(:disabled) { background: #5b34a8; color: #fff; transform: translateY(-2px); }
+
+  button.choice-btn.grade-btn, button.choice-btn.subject-btn {
+    display: flex; align-items: center; gap: 14px; justify-content: flex-start; text-align: left;
+  }
+  .btn-icon {
+    width: 36px; height: 36px; min-width: 36px; border-radius: 50%; background: #ddd3f7;
+    display: flex; align-items: center; justify-content: center; color: #5b34a8;
+  }
+  .btn-icon svg { width: 18px; height: 18px; }
+  .subject-icon { background: rgba(255,255,255,0.28); color: inherit; }
+  .subject-cell { align-items: center; }
+  .rank-link { text-align: center; width: 100%; }
+
+  button.choice-btn.subject-btn {
+    gap: 10px; padding-left: clamp(10px, 1vw, 16px); padding-right: clamp(8px, 0.8vw, 12px);
+    font-size: clamp(0.85rem, 0.7rem + 0.5vw, 1.1rem);
+  }
+  button.choice-btn.subject-btn .btn-icon { width: 28px; height: 28px; min-width: 28px; }
+  button.choice-btn.subject-btn .btn-icon svg { width: 14px; height: 14px; }
+  button.choice-btn.subject-btn span:last-child { white-space: normal; overflow-wrap: break-word; line-height: 1.2; }
 
   button.choice-btn[data-subject="matematicas"] { background: #4a90e2; border-color: #3574b8; color: #fff; }
   button.choice-btn[data-subject="matematicas"]:hover:not(:disabled) { background: #3574b8; }
@@ -44,7 +64,7 @@
   button.choice-btn[data-subject="naturales"] { background: #2fa84f; border-color: #227d3b; color: #fff; }
   button.choice-btn[data-subject="naturales"]:hover:not(:disabled) { background: #227d3b; }
   .rank-link { font-size: 0.75rem; color: #888; text-decoration: underline; cursor: pointer; }
-  .options-grid.single-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .options-grid.single-col { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
   .progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.9rem; color: #666; }
   .score-pill {
@@ -166,6 +186,11 @@
   @media (hover: none) {
     button.choice-btn:hover:not(:disabled), button.answer-btn:hover:not(:disabled), button.bonus-card:hover:not(:disabled) { transform: none; }
   }
+  @media (min-width: 700px) {
+    button.choice-btn.grade-btn, button.choice-btn.subject-btn {
+      justify-content: center;
+    }
+  }
 </style>
 </head>
 <body>
@@ -255,6 +280,14 @@ const questionBank = {
 const subjectLabels = { matematicas: "Matemáticas", espanol: "Español", sociales: "Sociales", naturales: "Naturales" };
 const allSubjects = ["matematicas", "espanol", "sociales", "naturales"];
 
+const icons = {
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-1.5-1-4-2-8-1v13c4-1 6.5 0 8 1 1.5-1 4-2 8-1V5c-4-1-6.5 0-8 1Z"/><path d="M12 6v13"/></svg>',
+  ruler: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16 16 3l5 5-13 13z"/><path d="m14 5 2 2M11 8l2 2M8 11l2 2M5 14l2 2"/></svg>',
+  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 2.5 3 15.5 0 18M12 3c-3 2.5-3 15.5 0 18"/></svg>',
+  leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 9-9 3 0 5 2 5 5 0 6-4 11-7 11Z"/><path d="M4 13c3 0 6-3 6-7"/></svg>'
+};
+const subjectIcons = { matematicas: icons.ruler, espanol: icons.book, sociales: icons.globe, naturales: icons.leaf };
+
 const bonusPrizesTemplate = [
   { label: "Doble puntos", effect: s => s * 2 },
   { label: "Sin premio", effect: s => s },
@@ -300,9 +333,9 @@ function renderGradeScreen() {
     <h1>Juego de Preguntas</h1>
     <p class="subtitle">Elige tu nivel para comenzar</p>
     <div class="options-grid single-col">
-      <button class="choice-btn" data-grade="7mo">7mo grado</button>
-      <button class="choice-btn" data-grade="8vo">8vo grado</button>
-      <button class="choice-btn" data-grade="9no">9no grado</button>
+      <button class="choice-btn grade-btn" data-grade="7mo"><span class="btn-icon">${icons.book}</span><span>7mo grado</span></button>
+      <button class="choice-btn grade-btn" data-grade="8vo"><span class="btn-icon">${icons.book}</span><span>8vo grado</span></button>
+      <button class="choice-btn grade-btn" data-grade="9no"><span class="btn-icon">${icons.book}</span><span>9no grado</span></button>
     </div>
     <span class="back-link" id="backToWelcome">&larr; Volver</span>
   `;
@@ -319,8 +352,8 @@ function renderSubjectScreen() {
     <div class="subject-grid">
       ${allSubjects.map(subj => `
         <div class="subject-cell">
-          <button class="choice-btn" data-subject="${subj}">${subjectLabels[subj]}</button>
-          <span class="rank-link" data-rank="${subj}">Ver ranking</span>
+          <button class="choice-btn subject-btn" data-subject="${subj}"><span class="btn-icon subject-icon">${subjectIcons[subj]}</span><span>${subjectLabels[subj]}</span></button>
+          <span class="rank-link" data-rank="${subj}">&rarr; Ranking</span>
         </div>
       `).join("")}
     </div>
