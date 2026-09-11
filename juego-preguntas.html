@@ -11,13 +11,26 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
+    position: relative;
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: radial-gradient(circle at 15% 20%, rgba(255,255,255,0.08) 0, transparent 40%),
-                radial-gradient(circle at 85% 80%, rgba(255,255,255,0.07) 0, transparent 45%),
-                linear-gradient(135deg, #2b2d6e, #6a3fb5);
+    background: #14152b;
     min-height: 100vh;
     display: flex; align-items: center; justify-content: center;
     padding: 20px;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 12% 18%, #4a90e2 0%, transparent 42%),
+      radial-gradient(circle at 85% 12%, #e6483b 0%, transparent 42%),
+      radial-gradient(circle at 15% 85%, #2fa84f 0%, transparent 42%),
+      radial-gradient(circle at 88% 82%, #7b3fd6 0%, transparent 45%),
+      radial-gradient(circle at 50% 50%, #f2c218 0%, transparent 55%);
+    filter: blur(70px) saturate(140%);
   }
   .card {
     background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
