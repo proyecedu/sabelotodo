@@ -104,7 +104,15 @@
   }
   .card { position: relative; }
   .quiz-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-  .exit-link { font-size: 0.78rem; color: #aaa; text-decoration: underline; cursor: pointer; }
+  .exit-x-btn {
+    background: #e14848; color: #fff; border: none; border-radius: 50%;
+    width: 34px; height: 34px; font-size: 1rem; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .exit-x-btn:hover { background: #c33333; transform: scale(1.08); }
+  .quiz-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .quiz-info { flex: 1; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: #666; }
 
   .bonus-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; margin-bottom: 18px; }
   button.bonus-card {
@@ -114,6 +122,15 @@
   button.bonus-card:hover:not(:disabled) { background: #5b34a8; color: #fff; }
   button.bonus-card:disabled { cursor: not-allowed; opacity: 0.55; }
   button.bonus-card.revealed { font-size: 1rem; opacity: 1; background: #fff; border-color: #5b34a8; color: #5b34a8; }
+  @keyframes cardShuffle {
+    0% { transform: translateX(0) rotate(0deg); }
+    20% { transform: translateX(-16px) rotate(-7deg); }
+    40% { transform: translateX(12px) rotate(6deg); }
+    60% { transform: translateX(-10px) rotate(-5deg); }
+    80% { transform: translateX(6px) rotate(3deg); }
+    100% { transform: translateX(0) rotate(0deg); }
+  }
+  button.bonus-card.shuffling { animation: cardShuffle 0.8s ease-in-out; }
 
   /* Solo en celulares muy angostos: tarjeta a pantalla completa en vez de flotando en el centro */
   @media (max-width: 420px) {
@@ -339,13 +356,12 @@ function renderNameScreen() {
 function renderQuizScreen() {
   const q = state.questions[state.currentIndex];
   app.innerHTML = `
-    <div class="quiz-top-row">
-      <span>Pregunta ${state.currentIndex + 1} de ${state.questions.length}</span>
-      <span class="score-pill">Puntos: ${state.score}</span>
-    </div>
-    <div class="quiz-top-row" style="margin-bottom:14px;">
-      <span class="exit-link" id="exitQuizBtn">Salir</span>
-      <span></span>
+    <div class="quiz-header">
+      <button class="exit-x-btn" id="exitQuizBtn" title="Salir" aria-label="Salir">✕</button>
+      <div class="quiz-info">
+        <span>Pregunta ${state.currentIndex + 1} de ${state.questions.length}</span>
+        <span class="score-pill">Puntos: ${state.score}</span>
+      </div>
     </div>
     <div class="timer-row">Tiempo restante: <span class="timer-num" id="timerNum">${state.timeLimit}</span>s</div>
     <div class="question-text">${q.q}</div>
@@ -426,32 +442,54 @@ function proceedAfterAnswer() {
 }
 
 function renderBonusScreen() {
-  const prizes = shuffle([...bonusPrizesTemplate]);
   app.innerHTML = `
     <h1>Ronda bonus</h1>
-    <p class="subtitle">Elige una carta. Cada una esconde un premio distinto.</p>
+    <p class="subtitle" id="bonusSubtitle">Mira bien, ¡estos son los premios que podrías ganar!</p>
     <div class="bonus-grid" id="bonusGrid">
-      ${prizes.map((p, i) => `<button class="bonus-card" data-index="${i}">?</button>`).join("")}
+      ${bonusPrizesTemplate.map(p => `<button class="bonus-card revealed" disabled>${p.label}</button>`).join("")}
     </div>
     <p class="status-msg" id="bonusStatus"></p>
     <button class="primary-btn" id="bonusContinueBtn" style="display:none;">Continuar</button>
   `;
-  const cards = app.querySelectorAll(".bonus-card");
-  cards.forEach(card => {
-    card.addEventListener("click", () => {
-      cards.forEach(c => c.disabled = true);
-      const idx = parseInt(card.dataset.index);
-      const prize = prizes[idx];
-      const before = state.score;
-      state.score = prize.effect(state.score);
-      card.textContent = prize.label;
-      card.classList.add("revealed");
-      document.getElementById("bonusStatus").textContent = `Puntaje: ${before} → ${state.score}`;
-      document.getElementById("bonusContinueBtn").style.display = "inline-block";
-      if (state.score > before) playCorrectSound();
-      else if (state.score < before) playWrongSound();
+
+  setTimeout(() => {
+    const subtitleEl = document.getElementById("bonusSubtitle");
+    if (subtitleEl) subtitleEl.textContent = "¡Se están revolviendo!";
+    playShuffleSound();
+    document.querySelectorAll("#bonusGrid .bonus-card").forEach((c, i) => {
+      c.classList.remove("revealed");
+      c.textContent = "?";
+      c.style.animationDelay = (i * 0.08) + "s";
+      c.classList.add("shuffling");
     });
-  });
+
+    setTimeout(() => {
+      const prizes = shuffle([...bonusPrizesTemplate]);
+      const grid = document.getElementById("bonusGrid");
+      if (!grid) return;
+      grid.innerHTML = prizes.map((p, i) => `<button class="bonus-card" data-index="${i}">?</button>`).join("");
+      const subtitleEl2 = document.getElementById("bonusSubtitle");
+      if (subtitleEl2) subtitleEl2.textContent = "Elige una carta.";
+
+      const cards = grid.querySelectorAll(".bonus-card");
+      cards.forEach(card => {
+        card.addEventListener("click", () => {
+          cards.forEach(c => c.disabled = true);
+          const idx = parseInt(card.dataset.index);
+          const prize = prizes[idx];
+          const before = state.score;
+          state.score = prize.effect(state.score);
+          card.textContent = prize.label;
+          card.classList.add("revealed");
+          document.getElementById("bonusStatus").textContent = `Puntaje: ${before} → ${state.score}`;
+          document.getElementById("bonusContinueBtn").style.display = "inline-block";
+          if (state.score > before) playCorrectSound();
+          else if (state.score < before) playWrongSound();
+        });
+      });
+    }, 900);
+  }, 1800);
+
   document.getElementById("bonusContinueBtn").addEventListener("click", () => { state.screen = "quiz"; render(); });
 }
 
@@ -557,6 +595,19 @@ function playTone(freq, duration, type, delay) {
 }
 function playCorrectSound() { playTone(523.25, 0.12, "sine", 0); playTone(783.99, 0.18, "sine", 0.1); }
 function playWrongSound() { playTone(160, 0.3, "sawtooth", 0); }
+function playClickSound() { playTone(700, 0.06, "triangle", 0); playTone(1040, 0.05, "triangle", 0.05); }
+function playShuffleSound() {
+  for (let i = 0; i < 7; i++) playTone(280 + i * 55, 0.05, "triangle", i * 0.045);
+}
+
+// Sonido de clic para cualquier botón que el jugador presione, excepto las
+// respuestas del quiz y las cartas bonus (esas ya tienen su propio sonido).
+document.addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn || btn.disabled) return;
+  if (btn.classList.contains("answer-btn") || btn.classList.contains("bonus-card")) return;
+  playClickSound();
+});
 
 /* =========================================================
    FUNCIONES DE FIRESTORE
