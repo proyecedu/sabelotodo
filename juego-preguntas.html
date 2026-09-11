@@ -149,6 +149,19 @@
   }
   @media (max-width: 600px) {
     .answer-list { grid-template-columns: 1fr; }
+    .quiz-header {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-areas: "exit points" "progress progress";
+      align-items: center;
+      row-gap: 12px;
+      column-gap: 10px;
+      margin-bottom: 18px;
+    }
+    .exit-btn { grid-area: exit; }
+    .score-pill { grid-area: points; justify-self: end; }
+    .quiz-progress-wrap { grid-area: progress; min-width: 0; }
+    .timer-row { margin-bottom: 14px; }
   }
   @media (hover: none) {
     button.choice-btn:hover:not(:disabled), button.answer-btn:hover:not(:disabled), button.bonus-card:hover:not(:disabled) { transform: none; }
