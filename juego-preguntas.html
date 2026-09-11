@@ -12,43 +12,46 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: linear-gradient(135deg, #2b2d6e, #6a3fb5);
+    background: radial-gradient(circle at 15% 20%, rgba(255,255,255,0.08) 0, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(255,255,255,0.07) 0, transparent 45%),
+                linear-gradient(135deg, #2b2d6e, #6a3fb5);
     min-height: 100vh;
     display: flex; align-items: center; justify-content: center;
     padding: 20px;
   }
   .card {
     background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    width: 100%; max-width: 480px; padding: 32px 28px; text-align: center;
+    width: min(94vw, 900px); padding: clamp(24px, 3vw + 10px, 60px) clamp(18px, 4vw + 8px, 72px);
+    text-align: center;
   }
-  h1 { color: #222; font-size: 1.5rem; margin-bottom: 8px; letter-spacing: 0.3px; }
-  p.subtitle { color: #666; margin-bottom: 24px; font-size: 0.95rem; }
-  .subject-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  h1 { color: #222; font-size: clamp(1.35rem, 1rem + 1.6vw, 2.3rem); margin-bottom: 8px; letter-spacing: 0.3px; }
+  p.subtitle { color: #666; margin-bottom: clamp(18px, 2vw, 28px); font-size: clamp(0.9rem, 0.8rem + 0.4vw, 1.15rem); }
+  .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; }
   .subject-cell { display: flex; flex-direction: column; gap: 4px; }
   button.choice-btn {
     background: #f1eefc; border: 2px solid #ddd3f7; border-radius: 12px;
-    padding: 18px 10px; font-size: 1.05rem; font-weight: 600; color: #5b34a8;
+    padding: clamp(16px, 1.5vw + 10px, 24px) clamp(10px, 1vw, 16px); font-size: clamp(1rem, 0.9rem + 0.4vw, 1.2rem); font-weight: 600; color: #5b34a8;
     cursor: pointer; transition: all 0.2s ease; width: 100%;
   }
   button.choice-btn:hover:not(:disabled) { background: #5b34a8; color: #fff; transform: translateY(-2px); }
   .rank-link { font-size: 0.75rem; color: #888; text-decoration: underline; cursor: pointer; }
-  .options-grid.single-col { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .options-grid.single-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
 
   .progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.9rem; color: #666; }
   .score-pill { background: #f1eefc; color: #5b34a8; padding: 4px 12px; border-radius: 20px; font-weight: 700; }
   .timer-num {
-    font-weight: 800; font-size: 1.3rem; color: #2f9e4f; min-width: 34px; text-align: center;
+    font-weight: 800; font-size: clamp(1.2rem, 1rem + 0.5vw, 1.6rem); color: #2f9e4f; min-width: 34px; text-align: center;
     transition: color 0.2s ease;
   }
   .timer-num.timer-warning { color: #d99a1a; }
   .timer-num.timer-danger { color: #d43b3b; }
   .timer-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 18px; font-size: 0.85rem; color: #888; }
 
-  .question-text { font-size: 1.2rem; color: #222; margin-bottom: 22px; line-height: 1.4; }
-  .answer-list { display: flex; flex-direction: column; gap: 12px; }
+  .question-text { font-size: clamp(1.1rem, 0.95rem + 1vw, 1.7rem); color: #222; margin-bottom: clamp(20px, 2vw, 30px); line-height: 1.4; }
+  .answer-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
   button.answer-btn {
     background: #faf9ff; border: 2px solid #e4defa; border-radius: 10px;
-    padding: 14px 16px; text-align: left; font-size: 1rem; color: #333; cursor: pointer;
+    padding: clamp(14px, 1vw + 8px, 20px) clamp(14px, 1vw + 8px, 22px); text-align: left; font-size: clamp(0.95rem, 0.85rem + 0.4vw, 1.2rem); color: #333; cursor: pointer;
     transition: all 0.2s ease;
   }
   button.answer-btn:hover:not(:disabled) { border-color: #5b34a8; background: #f1eefc; }
@@ -61,18 +64,20 @@
   .result-badge.great { background: #d9f2df; color: #1c6b32; }
   .result-badge.good { background: #fff2d6; color: #8a6100; }
   .result-badge.meh { background: #f1eefc; color: #5b34a8; }
-  .result-score { font-size: 2.2rem; font-weight: 800; color: #5b34a8; margin-bottom: 6px; }
+  .result-score { font-size: clamp(1.9rem, 1.4rem + 2vw, 3.4rem); font-weight: 800; color: #5b34a8; margin-bottom: 6px; }
   .result-msg { color: #555; margin-bottom: 20px; }
 
   .primary-btn {
     background: #5b34a8; color: #fff; border: none; border-radius: 10px;
-    padding: 14px 24px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 10px;
+    padding: clamp(13px, 1vw + 8px, 18px) clamp(20px, 2vw, 30px); font-size: clamp(0.95rem, 0.85rem + 0.3vw, 1.1rem); font-weight: 600; cursor: pointer;
+    width: 100%; max-width: 340px; margin: 0 auto 10px; display: block;
   }
   .primary-btn:hover { background: #46277f; }
   .primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .secondary-btn {
     background: #fff; color: #5b34a8; border: 2px solid #ddd3f7; border-radius: 10px;
-    padding: 12px 24px; font-size: 0.95rem; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 10px;
+    padding: clamp(11px, 0.8vw + 7px, 16px) clamp(20px, 2vw, 30px); font-size: clamp(0.9rem, 0.8rem + 0.3vw, 1.05rem); font-weight: 600; cursor: pointer;
+    width: 100%; max-width: 340px; margin: 0 auto 10px; display: block;
   }
   .name-input {
     width: 100%; padding: 14px; border: 2px solid #e4defa; border-radius: 10px;
@@ -101,40 +106,22 @@
   .quiz-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
   .exit-link { font-size: 0.78rem; color: #aaa; text-decoration: underline; cursor: pointer; }
 
-  .bonus-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 18px; }
+  .bonus-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; margin-bottom: 18px; }
   button.bonus-card {
     aspect-ratio: 1; border-radius: 14px; border: 2px solid #ddd3f7; background: #f1eefc;
-    color: #5b34a8; font-size: 1.6rem; font-weight: 800; cursor: pointer; transition: all 0.2s ease;
+    color: #5b34a8; font-size: clamp(1.3rem, 1rem + 1vw, 1.8rem); font-weight: 800; cursor: pointer; transition: all 0.2s ease;
   }
   button.bonus-card:hover:not(:disabled) { background: #5b34a8; color: #fff; }
   button.bonus-card:disabled { cursor: not-allowed; opacity: 0.55; }
   button.bonus-card.revealed { font-size: 1rem; opacity: 1; background: #fff; border-color: #5b34a8; color: #5b34a8; }
 
-  @media (max-width: 480px) {
+  /* Solo en celulares muy angostos: tarjeta a pantalla completa en vez de flotando en el centro */
+  @media (max-width: 420px) {
     body { padding: 0; align-items: flex-start; }
-    .card { max-width: 100%; min-height: 100vh; border-radius: 0; padding: 24px 18px; display: flex; flex-direction: column; justify-content: center; }
-    h1 { font-size: 1.3rem; }
-    .subject-grid { grid-template-columns: 1fr; }
-    button.choice-btn { padding: 16px 10px; font-size: 1rem; }
-    .question-text { font-size: 1.1rem; }
-    button.answer-btn { padding: 16px 14px; font-size: 1rem; }
-    .result-score { font-size: 1.9rem; }
+    .card { width: 100%; max-width: 100%; min-height: 100vh; border-radius: 0; display: flex; flex-direction: column; justify-content: center; }
   }
   @media (hover: none) {
     button.choice-btn:hover:not(:disabled), button.answer-btn:hover:not(:disabled), button.bonus-card:hover:not(:disabled) { transform: none; }
-  }
-  @media (min-width: 768px) {
-    .card { max-width: 640px; padding: 44px 52px; }
-    h1 { font-size: 1.9rem; }
-    p.subtitle { font-size: 1.05rem; }
-    .options-grid.single-col { grid-template-columns: repeat(3, 1fr); }
-    .subject-grid { grid-template-columns: repeat(4, 1fr); }
-    .question-text { font-size: 1.4rem; }
-    .answer-list { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    button.answer-btn { font-size: 1.05rem; }
-    .primary-btn, .secondary-btn { width: auto; min-width: 220px; }
-    .result-score { font-size: 2.6rem; }
-    .bonus-grid { grid-template-columns: repeat(4, 1fr); }
   }
 </style>
 </head>
