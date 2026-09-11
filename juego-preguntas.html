@@ -34,21 +34,34 @@
     cursor: pointer; transition: all 0.2s ease; width: 100%;
   }
   button.choice-btn:hover:not(:disabled) { background: #5b34a8; color: #fff; transform: translateY(-2px); }
+
+  button.choice-btn[data-subject="matematicas"] { background: #4a90e2; border-color: #3574b8; color: #fff; }
+  button.choice-btn[data-subject="matematicas"]:hover:not(:disabled) { background: #3574b8; }
+  button.choice-btn[data-subject="espanol"] { background: #e6483b; border-color: #bd3327; color: #fff; }
+  button.choice-btn[data-subject="espanol"]:hover:not(:disabled) { background: #bd3327; }
+  button.choice-btn[data-subject="sociales"] { background: #f2c218; border-color: #cb9f0a; color: #4a3b00; }
+  button.choice-btn[data-subject="sociales"]:hover:not(:disabled) { background: #cb9f0a; }
+  button.choice-btn[data-subject="naturales"] { background: #2fa84f; border-color: #227d3b; color: #fff; }
+  button.choice-btn[data-subject="naturales"]:hover:not(:disabled) { background: #227d3b; }
   .rank-link { font-size: 0.75rem; color: #888; text-decoration: underline; cursor: pointer; }
   .options-grid.single-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 
   .progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.9rem; color: #666; }
-  .score-pill { background: #f1eefc; color: #5b34a8; padding: 4px 12px; border-radius: 20px; font-weight: 700; }
+  .score-pill {
+    background: #f1eefc; color: #5b34a8; padding: 8px 16px; border-radius: 20px;
+    font-weight: 700; font-size: 0.85rem; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+  }
   .timer-num {
     font-weight: 800; font-size: clamp(1.2rem, 1rem + 0.5vw, 1.6rem); color: #2f9e4f; min-width: 34px; text-align: center;
     transition: color 0.2s ease;
   }
   .timer-num.timer-warning { color: #d99a1a; }
   .timer-num.timer-danger { color: #d43b3b; }
-  .timer-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 18px; font-size: 0.85rem; color: #888; }
+  .timer-row { display: flex; justify-content: center; align-items: center; gap: 6px; margin-bottom: 18px; font-size: 1rem; color: #666; }
+  .timer-label { font-size: clamp(1rem, 0.9rem + 0.4vw, 1.2rem); font-weight: 600; }
 
   .question-text { font-size: clamp(1.1rem, 0.95rem + 1vw, 1.7rem); color: #222; margin-bottom: clamp(20px, 2vw, 30px); line-height: 1.4; }
-  .answer-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .answer-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
   button.answer-btn {
     background: #faf9ff; border: 2px solid #e4defa; border-radius: 10px;
     padding: clamp(14px, 1vw + 8px, 20px) clamp(14px, 1vw + 8px, 22px); text-align: left; font-size: clamp(0.95rem, 0.85rem + 0.4vw, 1.2rem); color: #333; cursor: pointer;
@@ -104,29 +117,38 @@
   }
   .card { position: relative; }
   .quiz-top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-  .exit-x-btn {
-    background: #e14848; color: #fff; border: none; border-radius: 50%;
-    width: 34px; height: 34px; font-size: 1rem; font-weight: 800; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    transition: background 0.15s ease, transform 0.15s ease;
+  .exit-btn {
+    background: #e14848; color: #fff; border: none; border-radius: 30px;
+    padding: 9px 16px; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.3px;
+    cursor: pointer; display: flex; align-items: center; gap: 7px; white-space: nowrap;
+    transition: background 0.15s ease;
   }
-  .exit-x-btn:hover { background: #c33333; transform: scale(1.08); }
-  .quiz-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-  .quiz-info { flex: 1; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: #666; }
+  .exit-btn:hover { background: #c33333; }
+  .exit-btn .exit-x { font-weight: 900; }
+  .quiz-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+  .quiz-progress-wrap { flex: 1; min-width: 130px; }
+  .quiz-progress-label { font-size: 0.78rem; color: #888; text-align: center; margin-bottom: 4px; }
+  .progress-bar-track { background: #eee; border-radius: 20px; height: 8px; overflow: hidden; }
+  .progress-bar-fill { background: #5b34a8; height: 100%; border-radius: 20px; transition: width 0.3s ease; }
 
   .bonus-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; margin-bottom: 18px; }
   button.bonus-card {
-    aspect-ratio: 1; border-radius: 14px; border: 2px solid #ddd3f7; background: #f1eefc;
-    color: #5b34a8; font-size: clamp(1.3rem, 1rem + 1vw, 1.8rem); font-weight: 800; cursor: pointer; transition: all 0.2s ease;
+    aspect-ratio: 1; border-radius: 14px; border: 2px solid #ddd3f7;
+    background: conic-gradient(from 45deg, #4a90e2 0deg 90deg, #f2c218 90deg 180deg, #e6483b 180deg 270deg, #2fa84f 270deg 360deg);
+    color: #222; text-shadow: 0 0 4px #fff, 0 0 4px #fff, 0 0 6px #fff;
+    font-size: clamp(1.3rem, 1rem + 1vw, 1.8rem); font-weight: 800; cursor: pointer; transition: all 0.2s ease;
   }
-  button.bonus-card:hover:not(:disabled) { background: #5b34a8; color: #fff; }
-  button.bonus-card:disabled { cursor: not-allowed; opacity: 0.55; }
-  button.bonus-card.revealed { font-size: 1rem; opacity: 1; background: #fff; border-color: #5b34a8; color: #5b34a8; }
+  button.bonus-card:hover:not(:disabled) { filter: brightness(0.92); }
+  button.bonus-card:disabled { cursor: not-allowed; opacity: 0.7; }
+  button.bonus-card.revealed { font-size: 1rem; opacity: 1; }
 
   /* Solo en celulares muy angostos: tarjeta a pantalla completa en vez de flotando en el centro */
   @media (max-width: 420px) {
     body { padding: 0; align-items: flex-start; }
     .card { width: 100%; max-width: 100%; min-height: 100vh; border-radius: 0; display: flex; flex-direction: column; justify-content: center; }
+  }
+  @media (max-width: 600px) {
+    .answer-list { grid-template-columns: 1fr; }
   }
   @media (hover: none) {
     button.choice-btn:hover:not(:disabled), button.answer-btn:hover:not(:disabled), button.bonus-card:hover:not(:disabled) { transform: none; }
@@ -346,15 +368,20 @@ function renderNameScreen() {
 
 function renderQuizScreen() {
   const q = state.questions[state.currentIndex];
+  const total = state.questions.length;
+  const stepPct = Math.round(((state.currentIndex + 1) / total) * 100);
   app.innerHTML = `
     <div class="quiz-header">
-      <button class="exit-x-btn" id="exitQuizBtn" title="Salir" aria-label="Salir">✕</button>
-      <div class="quiz-info">
-        <span>Pregunta ${state.currentIndex + 1} de ${state.questions.length}</span>
-        <span class="score-pill">Puntos: ${state.score}</span>
+      <button class="exit-btn" id="exitQuizBtn" title="Salir"><span class="exit-x">✕</span> SALIR</button>
+      <div class="quiz-progress-wrap">
+        <div class="quiz-progress-label">Progreso: ${state.currentIndex + 1} de ${total} · ${stepPct}%</div>
+        <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${stepPct}%"></div></div>
       </div>
+      <span class="score-pill">🏆 Puntos: ${state.score}</span>
     </div>
-    <div class="timer-row">Tiempo restante: <span class="timer-num" id="timerNum">${state.timeLimit}</span>s</div>
+    <div class="timer-row">
+      <span class="timer-label">Tiempo restante:</span> <span class="timer-num" id="timerNum">${state.timeLimit}</span>s
+    </div>
     <div class="question-text">${q.q}</div>
     <div class="answer-list">
       ${q.options.map((opt, i) => `<button class="answer-btn" data-index="${i}">${opt}</button>`).join("")}
@@ -390,19 +417,26 @@ function renderQuizScreen() {
 function startTimer() {
   clearTimer();
   state.timeLeft = state.timeLimit;
+  updateTimerVisual();
   state.timerInterval = setInterval(() => {
     state.timeLeft--;
-    const el = document.getElementById("timerNum");
-    if (el) {
-      el.textContent = state.timeLeft;
-      el.classList.toggle("timer-warning", state.timeLeft <= 10 && state.timeLeft > 5);
-      el.classList.toggle("timer-danger", state.timeLeft <= 5);
-    }
+    updateTimerVisual();
     if (state.timeLeft <= 0) {
       clearTimer();
       handleTimeout();
     }
   }, 1000);
+}
+
+function updateTimerVisual() {
+  const numEl = document.getElementById("timerNum");
+  const warning = state.timeLeft <= 10 && state.timeLeft > 5;
+  const danger = state.timeLeft <= 5;
+  if (numEl) {
+    numEl.textContent = state.timeLeft;
+    numEl.classList.toggle("timer-warning", warning);
+    numEl.classList.toggle("timer-danger", danger);
+  }
 }
 
 function clearTimer() {
