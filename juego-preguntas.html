@@ -184,15 +184,13 @@
     .answer-list { grid-template-columns: 1fr; }
     .quiz-header {
       display: grid;
-      grid-template-columns: auto 1fr;
-      grid-template-areas: "exit points" "progress progress";
-      align-items: center;
+      grid-template-columns: 1fr;
+      grid-template-areas: "exit" "points" "progress";
       row-gap: 12px;
-      column-gap: 10px;
       margin-bottom: 18px;
     }
-    .exit-btn { grid-area: exit; }
-    .score-pill { grid-area: points; justify-self: end; }
+    .exit-btn { grid-area: exit; justify-self: start; }
+    .score-pill { grid-area: points; justify-self: center; }
     .quiz-progress-wrap { grid-area: progress; min-width: 0; }
     .timer-row { margin-bottom: 14px; }
   }
