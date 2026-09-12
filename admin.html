@@ -24,14 +24,29 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
+    position: relative;
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: #1e1f2e;
+    background: #14152b;
     min-height: 100vh;
     display: flex; align-items: flex-start; justify-content: center;
     padding: 20px;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 12% 18%, #4a90e2 0%, transparent 42%),
+      radial-gradient(circle at 85% 12%, #e6483b 0%, transparent 42%),
+      radial-gradient(circle at 15% 85%, #2fa84f 0%, transparent 42%),
+      radial-gradient(circle at 88% 82%, #7b3fd6 0%, transparent 45%),
+      radial-gradient(circle at 50% 50%, #f2c218 0%, transparent 55%);
+    filter: blur(70px) saturate(140%);
   }
   .card {
-    background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
     width: 100%; max-width: 640px; padding: 32px 28px; margin-top: 20px;
   }
   h1 { color: #222; font-size: 1.4rem; margin-bottom: 6px; text-align: center; }
@@ -41,12 +56,12 @@
     width: 100%; padding: 12px; border: 2px solid #dfe2f7; border-radius: 10px;
     font-size: 0.95rem; margin-bottom: 12px;
   }
-  .name-input:focus, textarea:focus, select:focus { outline: none; border-color: #4e54c8; }
+  .name-input:focus, textarea:focus, select:focus { outline: none; border-color: #5b34a8; }
   .primary-btn {
-    background: #4e54c8; color: #fff; border: none; border-radius: 10px;
+    background: #5b34a8; color: #fff; border: none; border-radius: 10px;
     padding: 14px 24px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%;
   }
-  .primary-btn:hover { background: #3a3fa0; }
+  .primary-btn:hover { background: #46277f; }
   .primary-btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .danger-btn {
     background: #e14848; color: #fff; border: none; border-radius: 10px;
@@ -54,12 +69,12 @@
   }
   .danger-btn:hover { background: #c33333; }
   .secondary-btn {
-    background: #fff; color: #4e54c8; border: 2px solid #d8ddff; border-radius: 10px;
+    background: #fff; color: #5b34a8; border: 2px solid #d8ddff; border-radius: 10px;
     padding: 10px 18px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
   }
   .error-msg { color: #c33333; font-size: 0.85rem; margin-bottom: 10px; text-align: center; min-height: 18px; }
   .season-box { background: #f0f2ff; border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 18px; }
-  .season-box .num { font-size: 2rem; font-weight: 800; color: #4e54c8; }
+  .season-box .num { font-size: 2rem; font-weight: 800; color: #5b34a8; }
   .season-box .label { font-size: 0.85rem; color: #666; }
   .filters { display: flex; gap: 8px; margin-bottom: 14px; }
   .filters select { margin-bottom: 0; }
@@ -71,16 +86,16 @@
   .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
   .tab-btn {
     flex: 1; padding: 10px; border-radius: 8px; border: 2px solid #dfe2f7; background: #fff;
-    color: #4e54c8; font-weight: 600; cursor: pointer; font-size: 0.9rem;
+    color: #5b34a8; font-weight: 600; cursor: pointer; font-size: 0.9rem;
   }
-  .tab-btn.active { background: #4e54c8; color: #fff; border-color: #4e54c8; }
+  .tab-btn.active { background: #5b34a8; color: #fff; border-color: #5b34a8; }
   .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .logout-link { font-size: 0.8rem; color: #888; cursor: pointer; text-decoration: underline; }
   .q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .opt-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .opt-row input[type="text"] { flex: 1; margin-bottom: 0; }
   fieldset { border: 2px solid #eef0ff; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
-  legend { color: #4e54c8; font-weight: 700; font-size: 0.9rem; padding: 0 6px; }
+  legend { color: #5b34a8; font-weight: 700; font-size: 0.9rem; padding: 0 6px; }
   .custom-q-item {
     display: flex; justify-content: space-between; align-items: center;
     background: #f7f8ff; padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem;
@@ -95,7 +110,7 @@
     position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
     background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #888; padding: 4px;
   }
-  .pw-toggle:hover { color: #4e54c8; }
+  .pw-toggle:hover { color: #5b34a8; }
 
   @media (max-width: 480px) {
     body { padding: 0; align-items: flex-start; }
@@ -417,13 +432,14 @@ async function renderConfigTab() {
 async function renderRankingTab() {
   const wrap = document.getElementById("tabContent");
   wrap.innerHTML = `
-    <div class="season-box"><div class="num" id="seasonNum">...</div><div class="label">Ronda actual</div></div>
+    <div class="season-box"><div class="num" id="lastResetText" style="font-size:1.05rem;">...</div><div class="label">Estado del ranking</div></div>
     <div class="filters">
       <select id="gradeFilter"><option value="all">Todos los niveles</option>${grades.map(g => `<option value="${g}">${g}</option>`).join("")}</select>
       <select id="subjectFilter"><option value="all">Todas las materias</option>${subjects.map(s => `<option value="${s}">${subjectLabels[s]}</option>`).join("")}</select>
     </div>
     <div id="tableWrap"><p class="empty-msg">Cargando...</p></div>
-    <button class="danger-btn" id="resetBtn">Reiniciar ranking (nueva ronda)</button>
+    <button class="secondary-btn" id="downloadCsvBtn" style="width:100%;margin-bottom:10px;">Descargar esta tabla (CSV / Excel)</button>
+    <button class="danger-btn" id="resetBtn">Reiniciar ranking</button>
     <p class="status-msg" id="statusMsg"></p>
   `;
   document.getElementById("gradeFilter").value = filterGrade;
@@ -431,7 +447,8 @@ async function renderRankingTab() {
   document.getElementById("gradeFilter").addEventListener("change", e => { filterGrade = e.target.value; loadRankingTable(); });
   document.getElementById("subjectFilter").addEventListener("change", e => { filterSubject = e.target.value; loadRankingTable(); });
   document.getElementById("resetBtn").addEventListener("click", resetSeason);
-  await loadSeason();
+  document.getElementById("downloadCsvBtn").addEventListener("click", downloadRankingCsv);
+  await loadLastReset();
   await loadRankingTable();
 }
 
@@ -441,10 +458,24 @@ async function getCurrentSeason() {
   return 1;
 }
 
-async function loadSeason() {
-  const el = document.getElementById("seasonNum");
-  if (el) el.textContent = "Ronda " + await getCurrentSeason();
+async function loadLastReset() {
+  const el = document.getElementById("lastResetText");
+  if (!el) return;
+  try {
+    const doc = await db.collection("config").doc("ranking").get();
+    const resetAt = doc.exists ? doc.data().resetAt : null;
+    if (resetAt && resetAt.toDate) {
+      el.textContent = "Ranking activo desde: " + resetAt.toDate().toLocaleString("es-HN", { dateStyle: "medium", timeStyle: "short" });
+    } else {
+      el.textContent = "El ranking nunca se ha reiniciado.";
+    }
+  } catch (err) {
+    console.error(err);
+    el.textContent = "Ranking activo";
+  }
 }
+
+let currentRankingRows = [];
 
 async function loadRankingTable() {
   const wrap = document.getElementById("tableWrap");
@@ -456,28 +487,61 @@ async function loadRankingTable() {
   if (filterSubject !== "all") query = query.where("subject", "==", filterSubject);
   try {
     const snapshot = await query.orderBy("score", "desc").limit(50).get();
-    if (snapshot.empty) { wrap.innerHTML = `<p class="empty-msg">No hay puntajes registrados en esta ronda todavía.</p>`; return; }
-    const rows = snapshot.docs.map(d => d.data());
+    currentRankingRows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (snapshot.empty) { wrap.innerHTML = `<p class="empty-msg">No hay puntajes registrados todavía.</p>`; return; }
     wrap.innerHTML = `
       <table>
-        <thead><tr><th>Nombre</th><th>Nivel</th><th>Materia</th><th>Puntaje</th></tr></thead>
-        <tbody>${rows.map(r => `<tr><td>${r.name}</td><td>${r.grade}</td><td>${subjectLabels[r.subject] || r.subject}</td><td>${r.score}/${r.total}</td></tr>`).join("")}</tbody>
+        <thead><tr><th>Nombre</th><th>Nivel</th><th>Materia</th><th>Puntaje</th><th></th></tr></thead>
+        <tbody>${currentRankingRows.map(r => `
+          <tr>
+            <td>${r.name}</td><td>${r.grade}</td><td>${subjectLabels[r.subject] || r.subject}</td><td>${r.score}/${r.total}</td>
+            <td><button class="del-btn" data-del-score="${r.id}">🗑</button></td>
+          </tr>
+        `).join("")}</tbody>
       </table>`;
+    wrap.querySelectorAll("[data-del-score]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("¿Borrar este puntaje del ranking? No se puede deshacer.")) return;
+        try {
+          await db.collection("scores").doc(btn.dataset.delScore).delete();
+          loadRankingTable();
+        } catch (err) {
+          console.error(err);
+          alert("No se pudo borrar. Revisa tu sesión.");
+        }
+      });
+    });
   } catch (err) {
     console.error(err);
     wrap.innerHTML = `<p class="empty-msg">⚠️ Firestore pidió crear un índice para este filtro. Revisa la consola del navegador (F12): ahí aparece un enlace directo para crearlo con un clic.</p>`;
   }
 }
 
+function downloadRankingCsv() {
+  if (!currentRankingRows.length) { alert("No hay datos para descargar."); return; }
+  const header = "Nombre,Nivel,Materia,Puntaje,Total\n";
+  const rows = currentRankingRows.map(r => `"${r.name}",${r.grade},${subjectLabels[r.subject] || r.subject},${r.score},${r.total}`).join("\n");
+  const blob = new Blob(["\uFEFF" + header + rows], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ranking.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 async function resetSeason() {
-  if (!confirm("¿Seguro que quieres iniciar una nueva ronda? El ranking actual dejará de mostrarse (los datos no se borran, solo se archivan).")) return;
+  if (!confirm("¿Seguro que quieres reiniciar el ranking? El ranking actual dejará de mostrarse (los datos no se borran, solo se archivan).")) return;
   const statusMsg = document.getElementById("statusMsg");
   statusMsg.textContent = "Reiniciando...";
   try {
     const current = await getCurrentSeason();
-    await db.collection("config").doc("ranking").set({ currentSeason: current + 1 });
-    statusMsg.textContent = "✅ Nueva ronda iniciada.";
-    await loadSeason();
+    await db.collection("config").doc("ranking").set({
+      currentSeason: current + 1,
+      resetAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    statusMsg.textContent = "✅ Ranking reiniciado.";
+    await loadLastReset();
     await loadRankingTable();
   } catch (err) {
     console.error(err);
