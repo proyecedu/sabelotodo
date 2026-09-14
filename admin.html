@@ -320,6 +320,7 @@ function renderDashboard() {
 function renderQrTab() {
   const gameUrl = new URL("juego-preguntas.html", window.location.href).href;
   const wrap = document.getElementById("tabContent");
+  let selectedGrade = null;
 
   function qrImg(url) {
     return `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}" alt="QR" style="width:160px;height:160px;">`;
@@ -327,16 +328,11 @@ function renderQrTab() {
 
   wrap.innerHTML = `
     <h2>Códigos QR para entrar al juego</h2>
-    <p class="hint">Cada nivel tiene su propio código. El estudiante escanea, y le aparece el juego con ese nivel ya elegido (sigue eligiendo materia y, si pusiste clave, tendrá que escribirla).</p>
-    <div class="q-grid">
-      ${grades.map(g => `
-        <div class="custom-q-item" style="flex-direction:column;align-items:center;gap:8px;padding:16px;">
-          <strong>${g}</strong>
-          ${qrImg(gameUrl + "?grado=" + g)}
-          <input type="text" readonly class="name-input" style="font-size:0.75rem;text-align:center;margin-bottom:0;" value="${gameUrl}?grado=${g}" onclick="this.select()">
-        </div>
-      `).join("")}
+    <p class="hint">Elige un nivel para generar su código. El estudiante escanea, y le aparece el juego con ese nivel ya elegido (sigue eligiendo materia y, si pusiste clave, tendrá que escribirla).</p>
+    <div class="filters" style="flex-wrap:wrap;">
+      ${grades.map(g => `<button class="secondary-btn" style="width:auto;flex:1;" data-grade-btn="${g}">Ver QR de ${g}</button>`).join("")}
     </div>
+    <div id="qrDisplayBox" style="text-align:center;margin-top:14px;"></div>
 
     <h2>Modo proyector (para TV o proyector del salón)</h2>
     <p class="hint">Abre este link en el televisor o proyector — muestra el ranking en vivo, sin botones, actualizándose solo. Puedes dejarlo abierto todo el día.</p>
@@ -346,6 +342,18 @@ function renderQrTab() {
     </div>
     <div id="projectorLinkBox" style="text-align:center;"></div>
   `;
+
+  wrap.querySelectorAll("[data-grade-btn]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const g = btn.dataset.gradeBtn;
+      const link = `${gameUrl}?grado=${g}`;
+      document.getElementById("qrDisplayBox").innerHTML = `
+        <strong>${g}</strong><br>
+        ${qrImg(link)}
+        <input type="text" readonly class="name-input" style="font-size:0.75rem;text-align:center;margin-top:10px;" value="${link}" onclick="this.select()">
+      `;
+    });
+  });
 
   function updateProjectorLink() {
     const g = document.getElementById("projGrade").value;
