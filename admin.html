@@ -298,6 +298,7 @@ function renderDashboard() {
       <button class="tab-btn ${activeTab === 'preguntas' ? 'active' : ''}" id="tabPreguntas">Preguntas</button>
       <button class="tab-btn ${activeTab === 'usuarios' ? 'active' : ''}" id="tabUsuarios">Usuarios</button>
       <button class="tab-btn ${activeTab === 'config' ? 'active' : ''}" id="tabConfig">Configuración</button>
+      <button class="tab-btn ${activeTab === 'qr' ? 'active' : ''}" id="tabQr">Proyector / QR</button>
     </div>
     <div id="tabContent"></div>
   `;
@@ -306,11 +307,59 @@ function renderDashboard() {
   document.getElementById("tabPreguntas").addEventListener("click", () => { activeTab = "preguntas"; renderDashboard(); });
   document.getElementById("tabUsuarios").addEventListener("click", () => { activeTab = "usuarios"; renderDashboard(); });
   document.getElementById("tabConfig").addEventListener("click", () => { activeTab = "config"; renderDashboard(); });
+  document.getElementById("tabQr").addEventListener("click", () => { activeTab = "qr"; renderDashboard(); });
 
   if (activeTab === "ranking") renderRankingTab();
   else if (activeTab === "preguntas") renderQuestionsTab();
   else if (activeTab === "usuarios") renderUsersTab();
+  else if (activeTab === "qr") renderQrTab();
   else renderConfigTab();
+}
+
+/* ---------------- PROYECTOR / QR TAB ---------------- */
+function renderQrTab() {
+  const gameUrl = new URL("juego-preguntas.html", window.location.href).href;
+  const wrap = document.getElementById("tabContent");
+
+  function qrImg(url) {
+    return `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}" alt="QR" style="width:160px;height:160px;">`;
+  }
+
+  wrap.innerHTML = `
+    <h2>Códigos QR para entrar al juego</h2>
+    <p class="hint">Cada nivel tiene su propio código. El estudiante escanea, y le aparece el juego con ese nivel ya elegido (sigue eligiendo materia y, si pusiste clave, tendrá que escribirla).</p>
+    <div class="q-grid">
+      ${grades.map(g => `
+        <div class="custom-q-item" style="flex-direction:column;align-items:center;gap:8px;padding:16px;">
+          <strong>${g}</strong>
+          ${qrImg(gameUrl + "?grado=" + g)}
+          <input type="text" readonly class="name-input" style="font-size:0.75rem;text-align:center;margin-bottom:0;" value="${gameUrl}?grado=${g}" onclick="this.select()">
+        </div>
+      `).join("")}
+    </div>
+
+    <h2>Modo proyector (para TV o proyector del salón)</h2>
+    <p class="hint">Abre este link en el televisor o proyector — muestra el ranking en vivo, sin botones, actualizándose solo. Puedes dejarlo abierto todo el día.</p>
+    <div class="filters">
+      <select id="projGrade"><option value="all">Todos los niveles</option>${grades.map(g => `<option value="${g}">${g}</option>`).join("")}</select>
+      <select id="projSubject"><option value="all">Todas las materias</option>${subjects.map(s => `<option value="${s}">${subjectLabels[s]}</option>`).join("")}</select>
+    </div>
+    <div id="projectorLinkBox" style="text-align:center;"></div>
+  `;
+
+  function updateProjectorLink() {
+    const g = document.getElementById("projGrade").value;
+    const s = document.getElementById("projSubject").value;
+    const link = `${gameUrl}?proyector=1&grado=${g}&materia=${s}`;
+    document.getElementById("projectorLinkBox").innerHTML = `
+      ${qrImg(link)}
+      <input type="text" readonly class="name-input" style="font-size:0.75rem;text-align:center;margin-top:10px;" value="${link}" onclick="this.select()">
+      <a href="${link}" target="_blank" class="secondary-btn" style="display:block;text-decoration:none;">Abrir en pestaña nueva</a>
+    `;
+  }
+  document.getElementById("projGrade").addEventListener("change", updateProjectorLink);
+  document.getElementById("projSubject").addEventListener("change", updateProjectorLink);
+  updateProjectorLink();
 }
 
 /* ---------------- USUARIOS TAB ---------------- */
@@ -377,6 +426,12 @@ async function renderUsersTab() {
 async function renderConfigTab() {
   const wrap = document.getElementById("tabContent");
   wrap.innerHTML = `
+    <h2>Clave para jugar</h2>
+    <p class="hint">Si la pones, cualquiera que quiera jugar deberá escribirla primero. Déjala vacía y guarda para que cualquiera pueda entrar sin clave. Cámbiala cuando quieras — a quien ya la escribió no se le pide de nuevo hasta que cierre esa pestaña del juego.</p>
+    <input type="text" id="accessCodeInput" class="name-input" placeholder="Clave para jugar (vacío = sin clave)">
+    <button class="primary-btn" id="saveAccessBtn">Guardar clave</button>
+    <p class="status-msg" id="accessStatus"></p>
+
     <h2>Tiempo límite por pregunta</h2>
     <p class="hint">Aplica a las próximas partidas que empiecen (no afecta partidas ya en curso).</p>
     <input type="number" id="timeLimitInput" class="name-input" min="5" max="120" value="30">
@@ -389,6 +444,24 @@ async function renderConfigTab() {
     <button class="primary-btn" id="saveInviteBtn">Guardar código</button>
     <p class="status-msg" id="inviteStatus"></p>
   `;
+  try {
+    const settingsDoc = await db.collection("config").doc("settings").get();
+    document.getElementById("accessCodeInput").value = (settingsDoc.exists && settingsDoc.data().accessCode) ? settingsDoc.data().accessCode : "";
+  } catch (err) { console.error(err); }
+
+  document.getElementById("saveAccessBtn").addEventListener("click", async () => {
+    const val = document.getElementById("accessCodeInput").value.trim();
+    const statusEl = document.getElementById("accessStatus");
+    statusEl.textContent = "Guardando...";
+    try {
+      await db.collection("config").doc("settings").set({ accessCode: val }, { merge: true });
+      statusEl.textContent = val ? "Clave guardada." : "Guardado sin clave — cualquiera puede entrar.";
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "No se pudo guardar. Revisa tu sesión.";
+    }
+  });
+
   try {
     const inviteDoc = await db.collection("config").doc("adminInvite").get();
     document.getElementById("inviteCodeInput").value = (inviteDoc.exists && inviteDoc.data().code) ? inviteDoc.data().code : DEFAULT_INVITE_CODE;
@@ -550,6 +623,8 @@ async function resetSeason() {
 }
 
 /* ---------------- PREGUNTAS TAB ---------------- */
+let editingQuestionId = null;
+
 function renderQuestionsTab() {
   const wrap = document.getElementById("tabContent");
   wrap.innerHTML = `
@@ -563,7 +638,7 @@ function renderQuestionsTab() {
     <button class="secondary-btn" id="clearAllBtn" style="width:100%;margin-bottom:10px;">Eliminar todas y volver a las preguntas por defecto</button>
 
     <fieldset>
-      <legend>Agregar una pregunta</legend>
+      <legend id="formLegend">Agregar una pregunta</legend>
       <input type="text" id="newQ" class="name-input" placeholder="Texto de la pregunta">
       <div class="opt-row"><input type="radio" name="correctOpt" value="0" checked><input type="text" class="opt-input" placeholder="Opción 1"></div>
       <div class="opt-row"><input type="radio" name="correctOpt" value="1"><input type="text" class="opt-input" placeholder="Opción 2"></div>
@@ -571,6 +646,7 @@ function renderQuestionsTab() {
       <div class="opt-row"><input type="radio" name="correctOpt" value="3"><input type="text" class="opt-input" placeholder="Opción 4"></div>
       <p class="hint">Marca con el círculo cuál opción es la correcta.</p>
       <button class="primary-btn" id="addQBtn">Agregar pregunta</button>
+      <span class="logout-link" id="cancelEditBtn" style="display:none;margin-left:10px;">Cancelar edición</span>
       <p class="status-msg" id="addQStatus"></p>
     </fieldset>
 
@@ -588,13 +664,39 @@ function renderQuestionsTab() {
     </fieldset>
   `;
 
+  editingQuestionId = null;
   document.getElementById("qGradeSel").addEventListener("change", e => { qGrade = e.target.value; renderQuestionsTab(); });
   document.getElementById("qSubjectSel").addEventListener("change", e => { qSubject = e.target.value; renderQuestionsTab(); });
   document.getElementById("clearAllBtn").addEventListener("click", clearAllQuestions);
-  document.getElementById("addQBtn").addEventListener("click", addSingleQuestion);
+  document.getElementById("addQBtn").addEventListener("click", saveQuestionForm);
+  document.getElementById("cancelEditBtn").addEventListener("click", exitEditMode);
   document.getElementById("uploadCsvBtn").addEventListener("click", uploadCsv);
 
   loadCurrentQuestions();
+}
+
+function exitEditMode() {
+  editingQuestionId = null;
+  document.getElementById("formLegend").textContent = "Agregar una pregunta";
+  document.getElementById("addQBtn").textContent = "Agregar pregunta";
+  document.getElementById("cancelEditBtn").style.display = "none";
+  document.getElementById("newQ").value = "";
+  document.querySelectorAll(".opt-input").forEach(i => i.value = "");
+  document.querySelector('input[name="correctOpt"][value="0"]').checked = true;
+  document.getElementById("addQStatus").textContent = "";
+}
+
+function enterEditMode(id, data) {
+  editingQuestionId = id;
+  document.getElementById("formLegend").textContent = "Editando pregunta";
+  document.getElementById("addQBtn").textContent = "Guardar cambios";
+  document.getElementById("cancelEditBtn").style.display = "inline";
+  document.getElementById("newQ").value = data.q;
+  const optInputs = document.querySelectorAll(".opt-input");
+  data.options.forEach((opt, i) => { if (optInputs[i]) optInputs[i].value = opt; });
+  const radio = document.querySelector(`input[name="correctOpt"][value="${data.correct}"]`);
+  if (radio) radio.checked = true;
+  document.getElementById("newQ").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 async function loadCurrentQuestions() {
@@ -605,13 +707,23 @@ async function loadCurrentQuestions() {
     wrap.innerHTML = snap.docs.map(doc => `
       <div class="custom-q-item">
         <span>${doc.data().q}</span>
-        <button class="del-btn" data-id="${doc.id}">🗑 Borrar</button>
+        <span>
+          <button class="secondary-btn" style="width:auto;padding:6px 12px;margin-right:6px;" data-edit="${doc.id}">✏️ Editar</button>
+          <button class="del-btn" data-id="${doc.id}">🗑 Borrar</button>
+        </span>
       </div>
     `).join("");
     wrap.querySelectorAll("[data-id]").forEach(btn => {
       btn.addEventListener("click", async () => {
+        if (!confirm("¿Borrar esta pregunta?")) return;
         await db.collection("questions").doc(btn.dataset.id).delete();
         loadCurrentQuestions();
+      });
+    });
+    wrap.querySelectorAll("[data-edit]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const doc = snap.docs.find(d => d.id === btn.dataset.edit);
+        if (doc) enterEditMode(doc.id, doc.data());
       });
     });
   } catch (err) {
@@ -629,7 +741,7 @@ async function clearAllQuestions() {
   loadCurrentQuestions();
 }
 
-async function addSingleQuestion() {
+async function saveQuestionForm() {
   const qText = document.getElementById("newQ").value.trim();
   const optInputs = document.querySelectorAll(".opt-input");
   const options = Array.from(optInputs).map(i => i.value.trim());
@@ -639,13 +751,21 @@ async function addSingleQuestion() {
   if (!qText || options.some(o => !o)) { statusEl.textContent = "⚠️ Completa la pregunta y las 4 opciones."; return; }
   statusEl.textContent = "Guardando...";
   try {
-    await db.collection("questions").add({
-      grade: qGrade, subject: qSubject, q: qText, options, correct: correctIdx,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    statusEl.textContent = "✅ Pregunta agregada.";
-    document.getElementById("newQ").value = "";
-    optInputs.forEach(i => i.value = "");
+    if (editingQuestionId) {
+      await db.collection("questions").doc(editingQuestionId).update({
+        q: qText, options, correct: correctIdx
+      });
+      statusEl.textContent = "✅ Pregunta actualizada.";
+      exitEditMode();
+    } else {
+      await db.collection("questions").add({
+        grade: qGrade, subject: qSubject, q: qText, options, correct: correctIdx,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      statusEl.textContent = "✅ Pregunta agregada.";
+      document.getElementById("newQ").value = "";
+      optInputs.forEach(i => i.value = "");
+    }
     loadCurrentQuestions();
   } catch (err) {
     console.error(err);
