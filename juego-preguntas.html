@@ -202,6 +202,19 @@
       justify-content: center;
     }
   }
+  .projector-wrap { max-width: 900px; width: 100%; margin: 0 auto; padding: 50px 30px; color: #fff; text-align: center; }
+  .projector-title { font-size: clamp(2rem, 1.5rem + 3vw, 3.4rem); margin-bottom: 8px; }
+  .projector-sub { font-size: clamp(1.1rem, 1rem + 1vw, 1.6rem); opacity: 0.85; margin-bottom: 40px; }
+  .projector-list { list-style: none; text-align: left; padding: 0; }
+  .projector-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255,255,255,0.14); border-radius: 16px; padding: 20px 30px; margin-bottom: 14px;
+    font-size: clamp(1.2rem, 1rem + 1.5vw, 1.9rem); font-weight: 700;
+  }
+  .proj-rank { color: #f2c218; width: 70px; }
+  .proj-name { flex: 1; text-align: left; padding: 0 12px; }
+  .proj-score { color: #7fb4ff; }
+  .projector-empty { justify-content: center !important; opacity: 0.7; font-weight: 400 !important; font-size: 1.1rem !important; }
 </style>
 </head>
 <body>
@@ -315,12 +328,15 @@ let state = {
 let rankingUnsubscribe = null;
 
 const app = document.getElementById("app");
+const urlParams = new URLSearchParams(window.location.search);
+const deepLinkGrade = urlParams.get("grado");
 
 function render() {
   if (rankingUnsubscribe && state.screen !== "ranking") { rankingUnsubscribe(); rankingUnsubscribe = null; }
   if (state.timerInterval && state.screen !== "quiz") { clearInterval(state.timerInterval); state.timerInterval = null; }
 
   if (state.screen === "welcome") renderWelcomeScreen();
+  else if (state.screen === "access") renderAccessScreen();
   else if (state.screen === "grade") renderGradeScreen();
   else if (state.screen === "subject") renderSubjectScreen();
   else if (state.screen === "name") renderNameScreen();
@@ -330,13 +346,83 @@ function render() {
   else if (state.screen === "ranking") renderRankingScreen();
 }
 
+function goAfterAccess() {
+  if (deepLinkGrade && ["7mo", "8vo", "9no"].includes(deepLinkGrade)) {
+    state.grade = deepLinkGrade;
+    state.screen = "subject";
+  } else {
+    state.screen = "grade";
+  }
+  render();
+}
+
 function renderWelcomeScreen() {
   app.innerHTML = `
     <h1>Juego de Preguntas</h1>
     <p class="subtitle">Pon a prueba lo que sabes, suma puntos y sube al ranking.</p>
     <button class="primary-btn" id="playBtn" style="font-size:1.1rem;padding:18px 24px;">JUGAR</button>
   `;
-  document.getElementById("playBtn").addEventListener("click", () => { state.screen = "grade"; render(); });
+  document.getElementById("playBtn").addEventListener("click", async () => {
+    if (sessionStorage.getItem("juegoAccessOk") === "1") { goAfterAccess(); return; }
+    state.screen = "access";
+    render();
+  });
+}
+
+function renderAccessScreen() {
+  app.innerHTML = `
+    <h1>Clave de acceso</h1>
+    <p class="subtitle">Pídele la clave a tu profesor(a) para poder jugar.</p>
+    <input type="text" id="accessInput" class="name-input" placeholder="Escribe la clave" autocomplete="off">
+    <p class="status-msg" id="accessStatus"></p>
+    <button class="primary-btn" id="accessBtn">Continuar</button>
+    <span class="back-link" id="backFromAccess">&larr; Volver</span>
+  `;
+  const input = document.getElementById("accessInput");
+  input.focus();
+  const btn = document.getElementById("accessBtn");
+  const statusEl = document.getElementById("accessStatus");
+
+  async function checkCode() {
+    const typed = input.value.trim();
+    if (!typed) { input.focus(); return; }
+    btn.disabled = true;
+    statusEl.textContent = "Verificando...";
+    try {
+      const realCode = await loadAccessCode();
+      if (!realCode) {
+        // Si el admin nunca configuró una clave, se deja jugar libremente.
+        sessionStorage.setItem("juegoAccessOk", "1");
+        goAfterAccess();
+        return;
+      }
+      if (typed === realCode) {
+        sessionStorage.setItem("juegoAccessOk", "1");
+        goAfterAccess();
+      } else {
+        statusEl.textContent = "Clave incorrecta.";
+        btn.disabled = false;
+      }
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "No se pudo verificar la clave. Intenta de nuevo.";
+      btn.disabled = false;
+    }
+  }
+  btn.addEventListener("click", checkCode);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") checkCode(); });
+  document.getElementById("backFromAccess").addEventListener("click", () => { state.screen = "welcome"; render(); });
+}
+
+async function loadAccessCode() {
+  if (!db) return null;
+  try {
+    const doc = await db.collection("config").doc("settings").get();
+    return (doc.exists && doc.data().accessCode) ? doc.data().accessCode : null;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 }
 
 function renderGradeScreen() {
@@ -817,7 +903,55 @@ function shuffle(arr) {
   return arr;
 }
 
-render();
+/* =========================================================
+   MODO PROYECTOR
+   Se activa con ?proyector=1 en el link (opcionalmente
+   &grado=7mo y/o &materia=matematicas para filtrar).
+   Pantalla de solo lectura, sin botones, pensada para TV.
+   ========================================================= */
+function renderProjectorMode(grade, subject) {
+  document.body.innerHTML = `
+    <div class="projector-wrap">
+      <h1 class="projector-title"><span class="live-dot"></span>Ranking en vivo</h1>
+      <p class="projector-sub">${grade !== "all" ? grade : "Todos los niveles"} · ${subject !== "all" ? (subjectLabels[subject] || subject) : "Todas las materias"}</p>
+      <ol class="projector-list" id="projectorList"><li class="projector-empty">Cargando...</li></ol>
+    </div>
+  `;
+  subscribeProjectorRanking(grade, subject);
+}
+
+async function subscribeProjectorRanking(grade, subject) {
+  const listEl = document.getElementById("projectorList");
+  if (!db) { if (listEl) listEl.innerHTML = `<li class="projector-empty">Ranking no disponible.</li>`; return; }
+  try {
+    const season = await getCurrentSeason();
+    let query = db.collection("scores").where("season", "==", season);
+    if (grade !== "all") query = query.where("grade", "==", grade);
+    if (subject !== "all") query = query.where("subject", "==", subject);
+    query.orderBy("score", "desc").limit(10).onSnapshot(snapshot => {
+      const list = snapshot.docs.map(d => d.data());
+      const el = document.getElementById("projectorList");
+      if (!el) return;
+      if (list.length === 0) { el.innerHTML = `<li class="projector-empty">Todavía no hay puntajes.</li>`; return; }
+      el.innerHTML = list.map((item, i) => `
+        <li><span class="proj-rank">#${i + 1}</span><span class="proj-name">${item.name}</span><span class="proj-score">${item.score} pts</span></li>
+      `).join("");
+    }, err => {
+      console.error(err);
+      const el = document.getElementById("projectorList");
+      if (el) el.innerHTML = `<li class="projector-empty">No se pudo cargar (revisa si falta crear un índice en Firestore, F12).</li>`;
+    });
+  } catch (err) {
+    console.error(err);
+    if (listEl) listEl.innerHTML = `<li class="projector-empty">No se pudo cargar el ranking.</li>`;
+  }
+}
+
+if (urlParams.get("proyector") === "1") {
+  renderProjectorMode(urlParams.get("grado") || "all", urlParams.get("materia") || "all");
+} else {
+  render();
+}
 </script>
 </body>
 </html>
