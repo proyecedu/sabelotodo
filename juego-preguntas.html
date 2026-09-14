@@ -361,9 +361,23 @@ function renderWelcomeScreen() {
     <h1>Juego de Preguntas</h1>
     <p class="subtitle">Pon a prueba lo que sabes, suma puntos y sube al ranking.</p>
     <button class="primary-btn" id="playBtn" style="font-size:1.1rem;padding:18px 24px;">JUGAR</button>
+    <p class="status-msg" id="welcomeStatus"></p>
   `;
   document.getElementById("playBtn").addEventListener("click", async () => {
     if (sessionStorage.getItem("juegoAccessOk") === "1") { goAfterAccess(); return; }
+    const btn = document.getElementById("playBtn");
+    const statusEl = document.getElementById("welcomeStatus");
+    btn.disabled = true;
+    statusEl.textContent = "Cargando...";
+    const realCode = await loadAccessCode();
+    if (!realCode) {
+      // No hay clave configurada: se entra directo, sin pedir nada.
+      sessionStorage.setItem("juegoAccessOk", "1");
+      goAfterAccess();
+      return;
+    }
+    btn.disabled = false;
+    statusEl.textContent = "";
     state.screen = "access";
     render();
   });
@@ -390,13 +404,7 @@ function renderAccessScreen() {
     statusEl.textContent = "Verificando...";
     try {
       const realCode = await loadAccessCode();
-      if (!realCode) {
-        // Si el admin nunca configuró una clave, se deja jugar libremente.
-        sessionStorage.setItem("juegoAccessOk", "1");
-        goAfterAccess();
-        return;
-      }
-      if (typed === realCode) {
+      if (!realCode || typed === realCode) {
         sessionStorage.setItem("juegoAccessOk", "1");
         goAfterAccess();
       } else {
