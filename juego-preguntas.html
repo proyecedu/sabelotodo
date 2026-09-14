@@ -137,6 +137,12 @@
     padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; background: #faf9ff; font-size: 0.95rem;
   }
   .ranking-list li.me { background: #d9f2df; border: 1px solid #2f9e4f; }
+  .ranking-list li.rank-1 { background: #fff3cf; border: 1px solid #e0b23a; }
+  .ranking-list li.rank-2 { background: #f0f0f2; border: 1px solid #b7b9c0; }
+  .ranking-list li.rank-3 { background: #fbe3d3; border: 1px solid #cc8a5a; }
+  .ranking-list li.rank-1 .ranking-rank { color: #b8860b; }
+  .ranking-list li.rank-2 .ranking-rank { color: #6b6d75; }
+  .ranking-list li.rank-3 .ranking-rank { color: #a15b30; }
   .ranking-rank { font-weight: 700; color: #5b34a8; margin-right: 10px; }
   .ranking-name { flex: 1; text-align: left; }
   .ranking-score { font-weight: 700; color: #333; }
@@ -212,6 +218,9 @@
     font-size: clamp(1.2rem, 1rem + 1.5vw, 1.9rem); font-weight: 700;
   }
   .proj-rank { color: #f2c218; width: 70px; }
+  .projector-list li.rank-1 { background: rgba(242,194,24,0.28); border: 2px solid #f2c218; }
+  .projector-list li.rank-2 { background: rgba(220,220,230,0.22); border: 2px solid #c9c9d4; }
+  .projector-list li.rank-3 { background: rgba(204,138,90,0.25); border: 2px solid #cc8a5a; }
   .proj-name { flex: 1; text-align: left; padding: 0 12px; }
   .proj-score { color: #7fb4ff; }
   .projector-empty { justify-content: center !important; opacity: 0.7; font-weight: 400 !important; font-size: 1.1rem !important; }
@@ -880,7 +889,7 @@ function renderRankingList(list) {
   }
   if (statusEl) statusEl.textContent = "";
   listEl.innerHTML = list.map((item, i) => `
-    <li class="${item.name === state.playerName && item.score === state.score ? 'me' : ''}">
+    <li class="${item.name === state.playerName && item.score === state.score ? 'me' : ''} ${i < 3 ? 'rank-' + (i + 1) : ''}">
       <span class="ranking-rank">#${i + 1}</span>
       <span class="ranking-name">${item.name}</span>
       <span class="ranking-score">${item.score} pts</span>
@@ -942,7 +951,7 @@ async function subscribeProjectorRanking(grade, subject) {
       if (!el) return;
       if (list.length === 0) { el.innerHTML = `<li class="projector-empty">Todavía no hay puntajes.</li>`; return; }
       el.innerHTML = list.map((item, i) => `
-        <li><span class="proj-rank">#${i + 1}</span><span class="proj-name">${item.name}</span><span class="proj-score">${item.score} pts</span></li>
+        <li class="${i < 3 ? 'rank-' + (i + 1) : ''}"><span class="proj-rank">#${i + 1}</span><span class="proj-name">${item.name}</span><span class="proj-score">${item.score} pts</span></li>
       `).join("");
     }, err => {
       console.error(err);
