@@ -262,50 +262,92 @@ const DEFAULT_TIME_LIMIT = 30;
 const questionBank = {
   "7mo": {
     matematicas: [
-      { q: "¿Cuánto es 8 + 15?", options: ["21", "23", "24", "22"], correct: 1 },
-      { q: "¿Cuál es el resultado de 9 × 6?", options: ["54", "56", "45", "63"], correct: 0 },
-      { q: "¿Cuánto es 100 ÷ 4?", options: ["20", "25", "30", "24"], correct: 1 },
-      { q: "¿Cuál es el perímetro de un cuadrado de lado 5 cm?", options: ["10 cm", "15 cm", "20 cm", "25 cm"], correct: 2 },
-      { q: "¿Cuánto es 7² (7 al cuadrado)?", options: ["14", "49", "42", "21"], correct: 1 }
+      { q: "¿Cuál de las siguientes comparaciones de números enteros es correcta?", options: ["-6 > +7", "+6 > -7", "-7 > +6", "0 > +6"], correct: 1 },
+      { q: "¿Cuál es el resultado correcto de la operación (+3) × (-4) × (+2)?", options: ["-24", "24", "9", "-9"], correct: 0 },
+      { q: "¿Cuál es el valor absoluto de -19, expresado como |-19|?", options: ["19", "-19", "0", "38"], correct: 0 },
+      { q: "Al simplificar la expresión algebraica 8a + 4 - 6a + 2, ¿qué resultado se obtiene?", options: ["2a + 6", "14a + 6", "2a - 6", "2a + 2"], correct: 0 },
+      { q: "Al resolver la ecuación 5x - 4 = 3x + 6, ¿cuál es el valor de x?", options: ["x = 5", "x = 10", "x = -5", "x = 1"], correct: 0 }
     ],
     espanol: [
-      { q: "¿Cuál palabra es un sustantivo?", options: ["Correr", "Bonito", "Casa", "Rápidamente"], correct: 2 },
-      { q: "¿Cuál es el sinónimo de 'feliz'?", options: ["Triste", "Contento", "Enojado", "Cansado"], correct: 1 },
-      { q: "¿Cuál oración está escrita correctamente?", options: ["el perro corre", "El perro corre.", "El Perro corre", "el Perro Corre."], correct: 1 },
-      { q: "¿Cuál es el antónimo de 'grande'?", options: ["Enorme", "Alto", "Pequeño", "Ancho"], correct: 2 },
-      { q: "¿Qué tipo de palabra es 'rápidamente'?", options: ["Sustantivo", "Adjetivo", "Adverbio", "Verbo"], correct: 2 }
+      { q: "Variedad del idioma que se impone en un país frente a las formas locales y se usa en los medios:", options: ["Lengua estándar", "Dialecto regional", "Jerga juvenil", "Lengua materna"], correct: 0 },
+      { q: "Propiedad del texto donde las ideas se expresan en secuencia lógica según su estructura:", options: ["Orden lógico", "Cohesión textual", "Coherencia semántica", "Registro formal"], correct: 0 },
+      { q: "Narración corta de ficción o invento literario que puede apoyarse en hechos reales:", options: ["Cuento literario", "Crónica periodística", "Fábula", "Ensayo"], correct: 0 },
+      { q: "Signo de puntuación que sirve para separar dos oraciones que tratan sobre el mismo tema:", options: ["Punto y seguido", "Punto y aparte", "Punto final", "Punto y coma"], correct: 0 },
+      { q: "Signos que se usan en oraciones incompletas por tener un final previsible o para crear suspenso:", options: ["Puntos suspensivos", "Comillas", "Guion largo", "Paréntesis"], correct: 0 }
+    ],
+    sociales: [
+      { q: "¿Cuál es la extensión territorial de Honduras y qué forma geométrica se le considera?", options: ["112,777 km² y pentágono irregular", "130,373 km² y pentágono irregular", "112,777 km² y triángulo irregular", "21,041 km² y pentágono irregular"], correct: 0 },
+      { q: "¿Quién realizó la primera división política de Honduras el 28 de julio de 1825 en 7 departamentos?", options: ["Dionisio de Herrera", "Francisco Morazán", "José Trinidad Cabañas", "Marco Aurelio Soto"], correct: 0 },
+      { q: "¿Cuál es la sierra más elevada de Honduras, donde se encuentra el Cerro Las Minas a 2,849 msnm?", options: ["Sierra de Celaque", "Sierra de Agalta", "Sierra de Opalaca", "Sierra Nombre de Dios"], correct: 0 },
+      { q: "¿En qué fecha quedó totalmente definida la frontera entre Honduras y Nicaragua durante la administración del Dr. Ramón Villeda Morales?", options: ["18 de noviembre de 1960", "14 de octubre de 1957", "21 de septiembre de 1961", "5 de junio de 1958"], correct: 0 },
+      { q: "¿Qué valle se localiza entre los departamentos de Cortés y Yoro, siendo propio para el cultivo de banano y ganadería?", options: ["Valle de Sula", "Valle de Comayagua", "Valle de Aguán", "Valle de Jamastrán"], correct: 0 }
+    ],
+    naturales: [
+      { q: "¿Qué son las I.R.A.?", options: ["Infecciones Respiratorias Agudas", "Infecciones Renales Agudas", "Infecciones Respiratorias Alérgicas", "Insuficiencias Respiratorias Agudas"], correct: 0 },
+      { q: "¿Qué vacuna previene el sarampión, rubéola y paperas?", options: ["Vacuna triple viral (SRP)", "Vacuna pentavalente", "Vacuna BCG", "Vacuna contra la influenza"], correct: 0 },
+      { q: "¿Con qué otro nombre se conoce al resfriado común?", options: ["Gripe", "Neumonía", "Faringitis", "Bronquitis"], correct: 0 },
+      { q: "¿Cómo se llama la diarrea aguda con sangre?", options: ["Disentería", "Cólera", "Gastroenteritis", "Amebiasis"], correct: 0 },
+      { q: "¿Cuánto dura la diarrea persistente?", options: ["14 días o más", "3 días o menos", "7 a 10 días", "1 mes o más"], correct: 0 }
     ]
   },
   "8vo": {
     matematicas: [
-      { q: "¿Cuánto es (-3) + 7?", options: ["4", "-4", "10", "-10"], correct: 0 },
-      { q: "¿Cuál es el valor de x en: x + 5 = 12?", options: ["5", "6", "7", "8"], correct: 2 },
-      { q: "¿Cuánto es 3/4 en decimal?", options: ["0.34", "0.75", "0.25", "0.43"], correct: 1 },
-      { q: "¿Cuál es el área de un rectángulo de 6 x 4?", options: ["20", "24", "10", "28"], correct: 1 },
-      { q: "¿Cuánto es 2³ (2 al cubo)?", options: ["6", "8", "4", "9"], correct: 1 }
+      { q: "Al simplificar la fracción 12/18, ¿cuál es el resultado?", options: ["2/3", "3/4", "1/2", "4/9"], correct: 0 },
+      { q: "Si los catetos de un triángulo rectángulo miden 3 cm y 4 cm, ¿cuánto mide la hipotenusa?", options: ["5 cm", "7 cm", "6 cm", "12 cm"], correct: 0 },
+      { q: "Si 3 lápices cuestan 15 lempiras, ¿cuánto cuestan 5 lápices al mismo precio?", options: ["25 lempiras", "20 lempiras", "30 lempiras", "18 lempiras"], correct: 0 },
+      { q: "¿Cuánto es 2⁵?", options: ["32", "25", "16", "10"], correct: 0 },
+      { q: "¿Cuál es el área de un triángulo con base de 10 cm y altura de 6 cm?", options: ["30 cm²", "60 cm²", "16 cm²", "20 cm²"], correct: 0 }
     ],
     espanol: [
-      { q: "¿Cuál palabra lleva tilde?", options: ["Camion", "Arbol", "Café", "Pantalon"], correct: 2 },
-      { q: "¿Cuál es el sujeto en 'María canta una canción'?", options: ["Canta", "Una canción", "María", "Canción"], correct: 2 },
-      { q: "¿Cuál es un ejemplo de verbo?", options: ["Mesa", "Estudiar", "Verde", "Lento"], correct: 1 },
-      { q: "¿Cuál es el plural de 'lápiz'?", options: ["Lapizes", "Lápices", "Lapices", "Lápizs"], correct: 1 },
-      { q: "¿Qué signo se usa al final de una pregunta?", options: [".", ",", "?", "!"], correct: 2 }
+      { q: "¿Qué figura literaria se usa en la frase 'sus dientes son perlas'?", options: ["Metáfora", "Símil", "Hipérbole", "Personificación"], correct: 0 },
+      { q: "¿Cómo se llama el género literario que se representa en un escenario ante un público?", options: ["Género dramático", "Género lírico", "Género narrativo", "Género épico"], correct: 0 },
+      { q: "¿Cuál de las siguientes palabras es esdrújula?", options: ["Médico", "Canción", "Mesa", "Perro"], correct: 0 },
+      { q: "¿Cómo se llama el texto que informa de manera objetiva sobre hechos reales?", options: ["Texto expositivo", "Texto narrativo", "Texto poético", "Texto dramático"], correct: 0 },
+      { q: "¿Cuál es un sinónimo de la palabra 'arduo'?", options: ["Difícil", "Fácil", "Rápido", "Lento"], correct: 0 }
+    ],
+    sociales: [
+      { q: "¿Quién fue el principal impulsor de la Reforma Liberal de Honduras en 1876?", options: ["Marco Aurelio Soto", "Francisco Morazán", "Dionisio de Herrera", "José Trinidad Reyes"], correct: 0 },
+      { q: "¿Cuántos poderes del Estado establece la Constitución de la República de Honduras?", options: ["3", "2", "4", "5"], correct: 0 },
+      { q: "¿Con qué país centroamericano limita Honduras al sureste?", options: ["Nicaragua", "Guatemala", "El Salvador", "Belice"], correct: 0 },
+      { q: "¿Cómo se llama la moneda oficial de Honduras?", options: ["Lempira", "Quetzal", "Colón", "Córdoba"], correct: 0 },
+      { q: "¿En qué año Honduras obtuvo su independencia de España?", options: ["1821", "1823", "1810", "1898"], correct: 0 }
+    ],
+    naturales: [
+      { q: "¿Qué sistema del cuerpo humano coordina las funciones mediante impulsos eléctricos?", options: ["Sistema nervioso", "Sistema digestivo", "Sistema circulatorio", "Sistema respiratorio"], correct: 0 },
+      { q: "¿Cuál es el órgano principal del sistema nervioso central?", options: ["El cerebro", "El corazón", "El hígado", "El pulmón"], correct: 0 },
+      { q: "¿En cuál estado de la materia las partículas están muy unidas y tienen forma definida?", options: ["Sólido", "Líquido", "Gaseoso", "Plasma"], correct: 0 },
+      { q: "¿Cómo se llama el proceso mediante el cual las plantas producen su alimento usando luz solar?", options: ["Fotosíntesis", "Respiración", "Transpiración", "Germinación"], correct: 0 },
+      { q: "¿Cuál de las siguientes infecciones de transmisión sexual es causada por un virus y no tiene cura, aunque sí tratamiento?", options: ["VIH/SIDA", "Gonorrea", "Sífilis", "Clamidia"], correct: 0 }
     ]
   },
   "9no": {
     matematicas: [
-      { q: "¿Cuál es la solución de 2x = 10?", options: ["4", "5", "6", "8"], correct: 1 },
-      { q: "¿Cuánto es √81?", options: ["8", "9", "7", "10"], correct: 1 },
-      { q: "¿Cuál es la fórmula del área de un círculo?", options: ["πr", "2πr", "πr²", "πd"], correct: 2 },
-      { q: "¿Cuánto es 15% de 200?", options: ["20", "25", "30", "35"], correct: 2 },
-      { q: "¿Cuál es el resultado de (x²)³?", options: ["x⁵", "x⁶", "x⁹", "x⁸"], correct: 1 }
+      { q: "Al resolver x² - 9 = 0, ¿cuáles son los valores de x?", options: ["x = 3 o x = -3", "x = 9", "x = -9", "x = 3 solamente"], correct: 0 },
+      { q: "¿Cuál es la pendiente de la recta y = 2x + 5?", options: ["2", "5", "-2", "1/2"], correct: 0 },
+      { q: "En el sistema x + y = 10 y x - y = 2, ¿cuál es el valor de x?", options: ["6", "4", "5", "8"], correct: 0 },
+      { q: "¿Cuál es la probabilidad de obtener un número par al lanzar un dado de 6 caras?", options: ["1/2", "1/3", "1/6", "2/3"], correct: 0 },
+      { q: "¿Qué razón trigonométrica relaciona el cateto opuesto entre la hipotenusa?", options: ["Seno", "Coseno", "Tangente", "Cotangente"], correct: 0 }
     ],
     espanol: [
-      { q: "¿Qué es una metáfora?", options: ["Comparación directa con 'como'", "Comparación implícita sin 'como'", "Una rima", "Un signo de puntuación"], correct: 1 },
-      { q: "¿Cuál es un ejemplo de oración compuesta?", options: ["Juan corre.", "Juan corre y María salta.", "Juan.", "Corre Juan."], correct: 1 },
-      { q: "¿Cuál es el género literario de una novela?", options: ["Lírico", "Narrativo", "Dramático", "Ensayístico"], correct: 1 },
-      { q: "¿Cuál palabra es un adjetivo?", options: ["Correr", "Hermoso", "Casa", "Rápidamente"], correct: 1 },
-      { q: "¿Qué es un sinónimo?", options: ["Palabra con significado opuesto", "Palabra con significado similar", "Palabra sin significado", "Un signo de puntuación"], correct: 1 }
+      { q: "¿Cómo se llama el género literario en el que el autor expresa su opinión o análisis personal sobre un tema?", options: ["Ensayo", "Cuento", "Novela", "Poema"], correct: 0 },
+      { q: "¿Qué figura literaria consiste en dar cualidades humanas a objetos o animales?", options: ["Personificación", "Metáfora", "Hipérbole", "Símil"], correct: 0 },
+      { q: "¿Qué categoría gramatical indica una acción, proceso o estado?", options: ["Verbo", "Sustantivo", "Adjetivo", "Adverbio"], correct: 0 },
+      { q: "¿Qué movimiento literario latinoamericano está representado por Rubén Darío?", options: ["Modernismo", "Realismo", "Romanticismo", "Vanguardismo"], correct: 0 },
+      { q: "¿Qué signo de puntuación se usa para citar textualmente las palabras de otra persona?", options: ["Comillas", "Paréntesis", "Guion", "Corchetes"], correct: 0 }
+    ],
+    sociales: [
+      { q: "¿En qué año entró en vigor la actual Constitución de la República de Honduras?", options: ["1982", "1965", "1957", "1998"], correct: 0 },
+      { q: "¿Qué organización internacional fue fundada en 1945 para mantener la paz y seguridad mundial?", options: ["ONU", "OEA", "UNESCO", "OTAN"], correct: 0 },
+      { q: "¿Cuál es el continente más extenso del mundo?", options: ["Asia", "África", "América", "Europa"], correct: 0 },
+      { q: "¿Cuál es la capital de Honduras?", options: ["Tegucigalpa", "San Pedro Sula", "La Ceiba", "Choluteca"], correct: 0 },
+      { q: "¿Qué documento, adoptado por la ONU en 1948, establece los derechos fundamentales de todos los seres humanos?", options: ["Declaración Universal de los Derechos Humanos", "Carta Magna", "Constitución de la República", "Tratado de Versalles"], correct: 0 }
+    ],
+    naturales: [
+      { q: "¿Qué teoría explica el movimiento de las placas que forman la corteza terrestre?", options: ["Tectónica de placas", "Teoría de la evolución", "Ley de la gravedad", "Teoría atómica"], correct: 0 },
+      { q: "¿Cuál es la capa más externa de la Tierra, donde vivimos?", options: ["Corteza terrestre", "Núcleo", "Manto", "Atmósfera"], correct: 0 },
+      { q: "¿Cómo se llama el fenómeno que ocurre cuando dos placas tectónicas chocan o se rozan, liberando energía?", options: ["Terremoto", "Huracán", "Tsunami", "Erupción volcánica"], correct: 0 },
+      { q: "¿Cómo se llama el conjunto formado por los seres vivos de una zona y el ambiente físico donde habitan?", options: ["Ecosistema", "Hábitat", "Bioma", "Población"], correct: 0 },
+      { q: "¿Qué gas necesitan los seres humanos para respirar y las plantas liberan durante la fotosíntesis?", options: ["Oxígeno", "Dióxido de carbono", "Nitrógeno", "Hidrógeno"], correct: 0 }
     ]
   }
 };
