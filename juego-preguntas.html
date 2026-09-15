@@ -945,13 +945,22 @@ async function loadQuestions(grade, subject) {
       const snap = await db.collection("questions").where("grade", "==", grade).where("subject", "==", subject).get();
       if (!snap.empty) {
         const custom = snap.docs.map(d => d.data());
-        return shuffle(custom).slice(0, Math.min(5, custom.length));
+        return shuffle(custom).slice(0, Math.min(5, custom.length)).map(shuffleQuestionOptions);
       }
     } catch (err) { console.error(err); }
   }
   const fallback = (questionBank[grade] && questionBank[grade][subject]) || [];
   if (fallback.length === 0) return [];
-  return shuffle([...fallback]).slice(0, Math.min(5, fallback.length));
+  return shuffle([...fallback]).slice(0, Math.min(5, fallback.length)).map(shuffleQuestionOptions);
+}
+
+// Revuelve el orden de las 4 opciones de una pregunta, ajustando cuál
+// posición es ahora la correcta, para que no siempre quede en el mismo lugar.
+function shuffleQuestionOptions(q) {
+  const order = shuffle([0, 1, 2, 3].slice(0, q.options.length));
+  const newOptions = order.map(i => q.options[i]);
+  const newCorrect = order.indexOf(q.correct);
+  return { ...q, options: newOptions, correct: newCorrect };
 }
 
 function shuffle(arr) {
